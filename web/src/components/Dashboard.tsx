@@ -270,7 +270,7 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
             </div>
             <span className="hidden items-center gap-2 md:flex"><MktChip label="SPY" v={data.market.spy_chg} /><MktChip label="QQQ" v={data.market.qqq_chg} /></span>
             <span className="nums hidden sm:inline">{clock}</span>
-            <span className={`inline-flex items-center gap-1 ${updated.stale ? "text-amber-400" : ""}`} title={updated.label}><span className="h-1.5 w-1.5 rounded-full bg-current" />{updated.rel}</span>
+            <span className={`inline-flex items-center gap-1 ${updated.stale ? "text-amber-400" : "text-zinc-500"}`} title={`Indicadores técnicos (RSI/MACD/score) recalculados: ${updated.label}`}><span className="h-1.5 w-1.5 rounded-full bg-current" /><span className="hidden text-zinc-600 sm:inline">Indicadores</span> {updated.rel}</span>
           </div>
         </div>
       </header>

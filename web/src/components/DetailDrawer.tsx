@@ -42,7 +42,7 @@ export function DetailContent({ s, onClose, onAnalysis, wide, onToggleWide }: { 
         </div>
       </div>
 
-      <div className="scroll-hint flex-1 overflow-y-auto px-4 pb-6">
+      <div className="scroll-hint detail-scroll flex-1 overflow-y-scroll px-4 pb-6">
         <div className="flex items-end gap-3 py-3">
           <span className="nums text-2xl font-semibold">{fmtPrice(s.price)}</span>
           <span className="mb-0.5 text-xs text-zinc-500">{s.currency}</span>
