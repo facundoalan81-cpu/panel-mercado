@@ -47,6 +47,7 @@ export interface Signal {
   asset_class: AssetClass;
   defensive: boolean;
   is_adr: boolean;
+  ar_panel?: "lider" | "general" | null;
   currency: string;
   ohlc?: Ohlc;
   status: "ok" | "sin_datos";

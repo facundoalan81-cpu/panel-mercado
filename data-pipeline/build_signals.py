@@ -100,7 +100,7 @@ def main():
             "ticker": it["ticker"], "name": it["name"], "exchange": _exchange(it),
             "country": it["country"], "sector": it["sector"], "asset_class": it["asset_class"],
             "defensive": it["defensive"], "is_adr": it["is_adr"], "currency": _currency(it),
-            "tv": it["tv"],
+            "tv": it["tv"], "ar_panel": it.get("ar_panel"),
         }
         item.update(sig)  # diario (1d) en el nivel superior
         tf = _tf_signals(df) if has else {}

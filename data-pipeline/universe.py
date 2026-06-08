@@ -10,10 +10,10 @@ Reglas aplicadas:
 Cada item: ticker (display), yf (símbolo Yahoo), name, country, sector, asset_class, defensive, is_adr
 """
 
-def _mk(ticker, yf, name, country, sector, asset_class="stock", defensive=False, is_adr=False, tv=None):
+def _mk(ticker, yf, name, country, sector, asset_class="stock", defensive=False, is_adr=False, tv=None, ar_panel=None):
     return {"ticker": ticker, "yf": yf, "name": name, "country": country,
             "sector": sector, "asset_class": asset_class, "defensive": defensive,
-            "is_adr": is_adr, "tv": tv or ticker}
+            "is_adr": is_adr, "tv": tv or ticker, "ar_panel": ar_panel}
 
 
 # --- EEUU tech/grandes (ticker, yf, name, sector) ---
@@ -172,16 +172,16 @@ def _build():
     for t, yf, name, sec in _US:
         u.append(_mk(t, yf, name, "US", sec))
     for t, yf, name, sec in _ADR_AR:
-        u.append(_mk(t, yf, name, "AR", sec, is_adr=True))
+        u.append(_mk(t, yf, name, "AR", sec, is_adr=True, ar_panel="lider"))
     u.extend(_MACRO)
     for t, yf, name, sec in _BR:
         u.append(_mk(t, yf, name, "BR", sec, is_adr=True))
     for t, yf, name, sec in _CN:
         u.append(_mk(t, yf, name, "CN", sec, is_adr=True))
     for t, yf, name, sec in _BCBA_LIDER:
-        u.append(_mk(t, yf, name, "AR", sec, tv=f"BCBA:{t}"))
+        u.append(_mk(t, yf, name, "AR", sec, tv=f"BCBA:{t}", ar_panel="lider"))
     for t, yf, name, sec in _BCBA_GRAL:
-        u.append(_mk(t, yf, name, "AR", sec, tv=f"BCBA:{t}"))
+        u.append(_mk(t, yf, name, "AR", sec, tv=f"BCBA:{t}", ar_panel="general"))
     for t in _DEF_STAPLES:
         u.append(_mk(t, t, t, "US", "Consumo Básico", defensive=True))
     for t in _DEF_HEALTH:

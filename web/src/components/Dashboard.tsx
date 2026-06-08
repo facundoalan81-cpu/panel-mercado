@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import type { Signal, SignalsPayload, Fundamentals } from "@/lib/types";
 import { CLASS_META, COUNTRY_META, SECTOR_ORDER, HELP, fmtPrice, fmtPct } from "@/lib/format";
 import { BiasBadge, ScorePips, RsiCell, MacdPill, MAsGlyph, VolFlowCell, Flag, EmaPair, SuperTrendCell, WaveTrendCell, BbpCell, VolCell, AvwapCell, RsiHistCell } from "./bits";
@@ -77,7 +78,7 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
   // El precio y la variación son SIEMPRE los actuales (no cambian por el marco); solo cambian los indicadores.
   const viewItems = useMemo(() => {
     if (tf === "1d") return data.items;
-    const META = ["ticker", "name", "exchange", "tv", "country", "sector", "asset_class", "defensive", "is_adr", "currency"] as const;
+    const META = ["ticker", "name", "exchange", "tv", "country", "sector", "asset_class", "defensive", "is_adr", "ar_panel", "currency"] as const;
     return data.items.map((it) => {
       const meta = Object.fromEntries(META.map((k) => [k, it[k as keyof Signal]]));
       const e = it.tf?.[tf];
@@ -126,12 +127,23 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
   const groups = useMemo(() => {
     const keyOf = (s: Signal) => {
       const c = COUNTRY_META[s.country]?.label ?? s.country;
-      return groupBy === "pais" ? c : groupBy === "sector" ? s.sector : groupBy === "ambos" ? `${c} · ${s.sector}` : "Todos";
+      if (groupBy === "sector") return s.sector;
+      if (groupBy === "ambos") return `${c} · ${s.sector}`;
+      if (groupBy === "lista") return "Todos";
+      // pais: Argentina se parte en Panel Líder / Panel General (como los brokers)
+      if (s.country === "AR") return `Argentina · Panel ${s.ar_panel === "general" ? "General" : "Líder"}`;
+      return c;
     };
     const map = new Map<string, Signal[]>();
     for (const s of filtered) { const k = keyOf(s); if (!map.has(k)) map.set(k, []); map.get(k)!.push(s); }
     const ci = (l: string) => ["Argentina", "EEUU", "Brasil", "China", "Global"].indexOf(l);
-    const ord = (k: string) => groupBy === "sector" ? SECTOR_ORDER.indexOf(k) : ci(k.split(" · ")[0]) * 100 + Math.max(0, SECTOR_ORDER.indexOf(k.split(" · ")[1] || ""));
+    const ord = (k: string) => {
+      if (groupBy === "sector") return SECTOR_ORDER.indexOf(k);
+      const parts = k.split(" · ");
+      const base = ci(parts[0]) * 100;
+      if (groupBy === "pais") return base + (parts[1] === "Panel General" ? 1 : 0);
+      return base + Math.max(0, SECTOR_ORDER.indexOf(parts[1] || ""));
+    };
     return [...map.entries()].sort((a, b) => ord(a[0]) - ord(b[0])).map(([k, rows]) => [k, sortRows(rows)] as const);
   }, [filtered, groupBy, sort, dailyByTicker]);
 
@@ -146,7 +158,7 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
       <div className="relative overflow-hidden border-b border-zinc-800 bg-gradient-to-r from-violet-600/25 via-fuchsia-600/10 to-transparent">
         <div className="pointer-events-none absolute -left-8 -top-10 h-32 w-32 rounded-full bg-violet-600/20 blur-3xl" />
         <div className="flex items-center gap-3 px-4 py-3">
-          <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-violet-700 font-serif text-2xl font-bold tracking-tighter shadow-lg shadow-violet-900/50 ring-1 ring-white/15">FI</span>
+          <Image src="/fi-logo.png" alt="Fer Inversiones" width={52} height={52} priority className="h-[52px] w-[52px] rounded-2xl object-cover shadow-lg shadow-black/50 ring-1 ring-white/15" />
           <div className="leading-tight">
             <div className="text-xl font-bold tracking-tight">Fer Inversiones</div>
             <div className="text-xs text-violet-300/80">Radar de mercado · análisis técnico</div>
