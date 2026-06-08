@@ -185,10 +185,13 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
             ))}
           </nav>
           <div className="ml-auto flex items-center gap-3 text-xs text-zinc-500">
-            <div className="flex items-center rounded-lg border border-zinc-800 p-0.5">
-              {([["simple", "Simple"], ["pro", "Pro"]] as const).map(([v, lbl]) => (
-                <button key={v} onClick={() => setView(v)} className={`cursor-pointer rounded-md px-2.5 py-1 text-xs transition-colors duration-200 ${view === v ? "bg-zinc-200 font-medium text-zinc-900" : "text-zinc-400 hover:text-zinc-200"}`}>{lbl}</button>
-              ))}
+            <div className="flex items-center gap-1.5">
+              <span className="hidden text-[10px] font-medium uppercase tracking-wide text-zinc-500 md:inline">Vista</span>
+              <div className="flex items-center rounded-lg border border-violet-500/40 bg-violet-500/10 p-0.5 shadow-sm shadow-violet-900/20">
+                {([["simple", "Simple"], ["pro", "Pro"]] as const).map(([v, lbl]) => (
+                  <button key={v} onClick={() => setView(v)} className={`cursor-pointer rounded-md px-3 py-1.5 text-xs font-semibold transition-colors duration-200 ${view === v ? "bg-violet-600 text-white shadow" : "text-violet-200/70 hover:text-white"}`}>{lbl}</button>
+                ))}
+              </div>
             </div>
             <span className="hidden items-center gap-2 md:flex"><MktChip label="SPY" v={data.market.spy_chg} /><MktChip label="QQQ" v={data.market.qqq_chg} /></span>
             <span className="nums hidden sm:inline">{clock}</span>
