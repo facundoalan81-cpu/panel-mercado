@@ -150,7 +150,7 @@ def _gt(a, b):
     return None if (a is None or b is None) else bool(a > b)
 
 
-def compute_signal(df: pd.DataFrame, min_bars: int = 200) -> dict:
+def compute_signal(df: pd.DataFrame, min_bars: int = 200, with_history: bool = False) -> dict:
     """df con columnas Open/High/Low/Close/Volume, index temporal asc. Devuelve dict de señal."""
     df = df.dropna(subset=["Close"]).copy()
     if len(df) < min_bars:
@@ -334,6 +334,25 @@ def compute_signal(df: pd.DataFrame, min_bars: int = 200) -> dict:
     _btxt = " · ".join(drv[:3])
     bias = {"label": blabel, "score": bscore, "text": (_btxt[:1].upper() + _btxt[1:]) if _btxt else ""}
 
+    # --- serie Miedo/Codicia (bull fraction de 5 flags por día) para el índice histórico ---
+    bull_series = {}
+    if with_history:
+        try:
+            e20s = ema(close, 20)
+            comp = pd.concat([
+                (close > e20s),
+                (mhist > 0),
+                (rsi_s >= 50),
+                (cmf_s > 0) if has_vol else pd.Series(False, index=close.index),
+                (st_dir.astype(bool) if len(st_dir) else pd.Series(False, index=close.index)),
+            ], axis=1)
+            frac = comp.mean(axis=1)
+            for d, v in frac.tail(260).items():
+                if v is not None and not (isinstance(v, float) and math.isnan(v)):
+                    bull_series[d.strftime("%Y-%m-%d")] = round(float(v), 3)
+        except Exception:
+            bull_series = {}
+
     high_v = float(df["High"].iloc[-1])
     vol_v = df["Volume"].iloc[-1]
     ohlc = {
@@ -376,4 +395,5 @@ def compute_signal(df: pd.DataFrame, min_bars: int = 200) -> dict:
         "caliente": caliente,
         "horizon": {"corto": horiz_corto(), "largo": horiz_largo()},
         "spark": {"price": spark(close), "rsi": spark(rsi_s), "macd_hist": spark(mhist)},
+        "bull_series": bull_series,
     }

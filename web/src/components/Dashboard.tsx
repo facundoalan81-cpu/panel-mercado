@@ -422,7 +422,7 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
             {selected ? (
               <div className="h-[calc(100vh-72px)]"><DetailContent s={selected} onClose={() => setSelected(null)} onAnalysis={(t) => { setSelected(null); setAnalysis(t); }} wide={detailWide} onToggleWide={() => setDetailWide((v) => !v)} /></div>
             ) : (
-              <div className="max-h-[calc(100vh-72px)] overflow-y-auto p-3"><MarketPanel items={filtered} onSelect={setSelected} /></div>
+              <div className="max-h-[calc(100vh-72px)] overflow-y-auto p-3"><MarketPanel items={filtered} fng={data.fng} onSelect={setSelected} /></div>
             )}
           </div>
         </aside>

@@ -92,7 +92,7 @@ def main():
     for it in UNIVERSE:
         df = frames.get(it["yf"])
         has = df is not None and len(df)
-        sig = compute_signal(df) if has else {"status": "sin_datos", "bars": 0}
+        sig = compute_signal(df, with_history=True) if has else {"status": "sin_datos", "bars": 0}
         if sig.get("status") == "sin_datos":
             sig = {"status": "sin_datos", "bars": sig.get("bars", 0),
                    "score": None, "classification": "SIN_DATOS"}
@@ -115,10 +115,33 @@ def main():
         c = df["Close"].dropna()
         return round((c.iloc[-1] / c.iloc[-2] - 1) * 100, 2) if len(c) >= 2 else None
 
+    # --- Índice Miedo/Codicia (Fear & Greed) market-wide: promedio diario de bull-fraction de las ACCIONES ---
+    from collections import defaultdict
+    acc = defaultdict(lambda: [0.0, 0])
+    for it in items:
+        if it.get("asset_class") != "stock":
+            continue
+        for d, f in (it.get("bull_series") or {}).items():
+            acc[d][0] += f
+            acc[d][1] += 1
+    hist = [{"d": d, "v": round(acc[d][0] / acc[d][1] * 100)} for d in sorted(acc) if acc[d][1] >= 20][-252:]
+
+    def _ago(n):
+        return hist[-1 - n]["v"] if len(hist) > n else None
+
+    fng = {
+        "value": hist[-1]["v"] if hist else 50,
+        "history": hist,
+        "prev": {"close": _ago(1), "week": _ago(5), "month": _ago(21), "year": _ago(251)},
+    }
+    for it in items:
+        it.pop("bull_series", None)  # no se guarda por papel (solo alimentó el índice)
+
     out = {
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "tz": "America/Argentina/Buenos_Aires",
         "market": {"spy_chg": chg("SPY"), "qqq_chg": chg("QQQ")},
+        "fng": fng,
         "count": len(items),
         "items": items,
     }

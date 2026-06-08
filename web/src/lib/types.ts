@@ -82,10 +82,17 @@ export interface Signal {
   tf?: Record<string, Partial<Signal>>;
 }
 
+export interface Fng {
+  value: number;
+  history: { d: string; v: number }[];
+  prev: { close: number | null; week: number | null; month: number | null; year: number | null };
+}
+
 export interface SignalsPayload {
   generated_at: string;
   tz: string;
   market: { spy_chg: number | null; qqq_chg: number | null };
+  fng?: Fng;
   count: number;
   items: Signal[];
 }
