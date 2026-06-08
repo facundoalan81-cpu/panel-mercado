@@ -70,6 +70,7 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
   const [tf, setTf] = useState("1d");
   const [sort, setSort] = useState<Sort | null>(null);
   const [selected, setSelected] = useState<Signal | null>(null);
+  const [detailWide, setDetailWide] = useState(false);
   const [clock, setClock] = useState("");
 
   useEffect(() => { const tick = () => setClock(new Date().toLocaleTimeString("es-AR", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" })); tick(); const id = setInterval(tick, 1000); return () => clearInterval(id); }, []);
@@ -161,9 +162,18 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
           <Image src="/fi-logo.png" alt="Fer Inversiones" width={52} height={52} priority className="h-[52px] w-[52px] rounded-2xl object-cover shadow-lg shadow-black/50 ring-1 ring-white/15" />
           <div className="leading-tight">
             <div className="text-xl font-bold tracking-tight">Fer Inversiones</div>
-            <div className="text-xs text-violet-300/80">Radar de mercado · análisis técnico</div>
+            <div className="text-xs text-violet-300/80">Radar de mercado</div>
           </div>
-          <span className="ml-auto hidden text-right text-[11px] leading-tight text-zinc-500 sm:block">{data.count} activos en seguimiento<br /><span className="text-zinc-600">actualizado {updated.rel}</span></span>
+          <div className="ml-auto flex items-center gap-3">
+            <span className="hidden text-right text-[11px] text-zinc-500 md:block">{data.count} activos</span>
+            <div className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 ${updated.stale ? "border-amber-500/40 bg-amber-500/10" : "border-emerald-500/30 bg-emerald-500/10"}`} title={`Última actualización: ${updated.label}`}>
+              <span className={`h-2 w-2 shrink-0 rounded-full ${updated.stale ? "bg-amber-400" : "bg-emerald-400 motion-safe:animate-pulse"}`} />
+              <div className="leading-tight">
+                <div className="text-[9px] uppercase tracking-wide text-zinc-500">Última actualización</div>
+                <div className="nums text-xs font-medium text-zinc-200">{updated.rel}</div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       {/* NAV */}
@@ -340,10 +350,10 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
           </p>
         </main>
 
-        <aside className="hidden w-[360px] shrink-0 lg:block">
+        <aside className={`hidden shrink-0 transition-[width] duration-200 lg:block ${detailWide ? "w-[620px]" : "w-[360px]"}`}>
           <div className="sticky top-[60px] max-h-[calc(100vh-72px)] overflow-hidden rounded-xl border border-zinc-800">
             {selected ? (
-              <div className="h-[calc(100vh-72px)]"><DetailContent s={selected} onClose={() => setSelected(null)} onAnalysis={(t) => { setSelected(null); setAnalysis(t); }} /></div>
+              <div className="h-[calc(100vh-72px)]"><DetailContent s={selected} onClose={() => setSelected(null)} onAnalysis={(t) => { setSelected(null); setAnalysis(t); }} wide={detailWide} onToggleWide={() => setDetailWide((v) => !v)} /></div>
             ) : (
               <div className="max-h-[calc(100vh-72px)] overflow-y-auto p-3"><MarketPanel items={filtered} onSelect={setSelected} /></div>
             )}

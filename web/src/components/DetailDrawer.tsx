@@ -22,7 +22,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   return <h3 className="mb-2 mt-5 text-[11px] font-medium uppercase tracking-wider text-zinc-500">{children}</h3>;
 }
 
-export function DetailContent({ s, onClose, onAnalysis }: { s: Signal; onClose: () => void; onAnalysis: (t: string) => void }) {
+export function DetailContent({ s, onClose, onAnalysis, wide, onToggleWide }: { s: Signal; onClose: () => void; onAnalysis: (t: string) => void; wide?: boolean; onToggleWide?: () => void }) {
   const o = s.ohlc;
   const up = (s.chg_pct ?? 0) >= 0;
   const rangePos = o && o.high != null && o.low != null && s.price != null && o.high !== o.low ? ((s.price - o.low) / (o.high - o.low)) * 100 : null;
@@ -36,10 +36,13 @@ export function DetailContent({ s, onClose, onAnalysis }: { s: Signal; onClose: 
         <span className="text-base font-semibold">{s.ticker}</span>
         <ClassBadge s={s} full />
         <span className="text-xs text-zinc-600">1D</span>
-        <button onClick={onClose} className="ml-auto cursor-pointer rounded-md px-2 py-1 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200"><Icon name="x" size={15} /></button>
+        <div className="ml-auto flex items-center gap-1">
+          {onToggleWide && <button onClick={onToggleWide} title={wide ? "Achicar panel" : "Ampliar panel"} className="hidden cursor-pointer rounded-md px-2 py-1 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200 lg:block"><Icon name={wide ? "collapse" : "expand"} size={15} /></button>}
+          <button onClick={onClose} className="cursor-pointer rounded-md px-2 py-1 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200"><Icon name="x" size={15} /></button>
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 pb-6">
+      <div className="scroll-hint flex-1 overflow-y-auto px-4 pb-6">
         <div className="flex items-end gap-3 py-3">
           <span className="nums text-2xl font-semibold">{fmtPrice(s.price)}</span>
           <span className="mb-0.5 text-xs text-zinc-500">{s.currency}</span>

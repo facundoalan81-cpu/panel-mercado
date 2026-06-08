@@ -19,6 +19,8 @@ const PATHS: Record<string, React.ReactNode> = {
   external: <><path d="M15 3h6v6" /><path d="M10 14 21 3" /><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /></>,
   help: <><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></>,
   sparkles: <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />,
+  expand: <><path d="m9 7-5 5 5 5" /><path d="m15 7 5 5-5 5" /></>,
+  collapse: <><path d="m20 17-5-5 5-5" /><path d="m4 7 5 5-5 5" /></>,
 };
 
 export function Icon({ name, size = 16, className, fill = false, sw = 2 }: { name: string; size?: number; className?: string; fill?: boolean; sw?: number }) {
