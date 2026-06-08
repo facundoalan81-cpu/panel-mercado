@@ -280,16 +280,15 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <span className="text-[11px] uppercase tracking-wide text-zinc-600">Marco</span>
           <div className="flex items-center rounded-lg border border-zinc-800 p-0.5">
-            <span className="px-1.5 text-[9px] uppercase tracking-wide text-zinc-700">Intra</span>
-            {([["5m", "5m"], ["15m", "15m"], ["45m", "45m"], ["1h", "1h"], ["4h", "4h"]] as const).map(([v, lbl]) => (
+            {([["1h", "1h"], ["4h", "4h"]] as const).map(([v, lbl]) => (
               <button key={v} onClick={() => setTf(v)} className={`cursor-pointer rounded-md px-2 py-1 text-xs transition-colors duration-200 ${tf === v ? "bg-zinc-200 font-medium text-zinc-900" : "text-zinc-400 hover:text-zinc-200"}`}>{lbl}</button>
             ))}
             <span className="mx-0.5 h-4 w-px bg-zinc-800" />
-            {([["1d", "1D"], ["1w", "1 sem"], ["1m", "1 mes"], ["3m", "3 meses"]] as const).map(([v, lbl]) => (
+            {([["1d", "Diario"], ["1w", "Semanal"], ["1m", "Mensual"]] as const).map(([v, lbl]) => (
               <button key={v} onClick={() => setTf(v)} className={`cursor-pointer rounded-md px-2.5 py-1 text-xs transition-colors duration-200 ${tf === v ? "bg-zinc-200 font-medium text-zinc-900" : "text-zinc-400 hover:text-zinc-200"}`}>{lbl}</button>
             ))}
           </div>
-          <Tip text="Los marcos intradía son una foto del último cierre (se actualizan en cada corrida). Para ver el intradía en vivo, abrí el papel: el chart de TradingView del detalle es en tiempo real." className="cursor-help text-zinc-600"><Icon name="help" size={13} /></Tip>
+          <Tip text="Cambia los indicadores técnicos (RSI, MACD, medias) según el marco temporal. El precio y la variación son siempre los actuales. Para ver el intradía en vivo, abrí el papel: el chart de TradingView del detalle es en tiempo real." className="cursor-help text-zinc-600"><Icon name="help" size={13} /></Tip>
           <div className="ml-auto flex items-center gap-2">
             <span className="text-[11px] uppercase tracking-wide text-zinc-600">Ver por</span>
             <div className="flex items-center rounded-lg border border-zinc-800 p-0.5">

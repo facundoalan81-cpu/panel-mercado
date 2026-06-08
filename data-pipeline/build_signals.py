@@ -17,8 +17,8 @@ OUT_DIR = os.path.join(os.path.dirname(__file__), "output")
 
 # Marcos temporales calculados por resampleo del diario (no cambian intradía -> update diario alcanza).
 _AGG = {"Open": "first", "High": "max", "Low": "min", "Close": "last", "Volume": "sum"}
-# (clave_tf, regla pandas, min_barras)
-_TF = [("1w", "W", 120), ("1m", "ME", 40), ("3m", "QE", 20)]
+# (clave_tf, regla pandas, min_barras) — marcos altos por resampleo del diario
+_TF = [("1w", "W", 120), ("1m", "ME", 40)]
 
 
 def _resample(df, rule):
@@ -45,14 +45,12 @@ def _tf_signals(df):
     return out
 
 
-def _intraday_tf(f5, f60):
-    """Señales intradía a partir de barras 5m (→ 5m/15m) y 60m (→ 1h/4h)."""
+def _intraday_tf(f60):
+    """Señales 1h/4h a partir de barras de 60m (Yahoo da hasta ~730d de 60m)."""
     out = {}
     specs = []
-    if f5 is not None and len(f5):
-        specs += [("5m", f5, 40), ("15m", _resample(f5, "15min"), 40), ("45m", _resample(f5, "45min"), 30)]
     if f60 is not None and len(f60):
-        specs += [("1h", f60, 40), ("4h", _resample(f60, "4h"), 20)]
+        specs += [("1h", f60, 40), ("4h", _resample(f60, "4h"), 40)]
     for key, rs, mb in specs:
         try:
             sig = compute_signal(rs, min_bars=mb)
@@ -83,10 +81,8 @@ def main():
     print(f"Fetch de {len(symbols)} símbolos (10y diario)...")
     frames = fetch_all(symbols, period="10y")
 
-    print("Fetch intradía 5m (1mo)...")
-    intr5 = fetch_intraday(symbols, interval="5m", period="1mo")
-    print("Fetch intradía 60m (3mo)...")
-    intr60 = fetch_intraday(symbols, interval="60m", period="3mo")
+    print("Fetch intradía 60m (2y) para 1h/4h...")
+    intr60 = fetch_intraday(symbols, interval="60m", period="2y")
 
     items = []
     for it in UNIVERSE:
@@ -104,7 +100,7 @@ def main():
         }
         item.update(sig)  # diario (1d) en el nivel superior
         tf = _tf_signals(df) if has else {}
-        tf.update(_intraday_tf(intr5.get(it["yf"]), intr60.get(it["yf"])))
+        tf.update(_intraday_tf(intr60.get(it["yf"])))
         item["tf"] = tf
         items.append(item)
 
