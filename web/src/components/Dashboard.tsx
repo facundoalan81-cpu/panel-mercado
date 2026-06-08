@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import { Show, SignInButton, UserButton, useUser } from "@clerk/nextjs";
 import type { Signal, SignalsPayload, Fundamentals } from "@/lib/types";
 import { CLASS_META, COUNTRY_META, SECTOR_ORDER, HELP, fmtPrice, fmtPct } from "@/lib/format";
 import { BiasBadge, ScorePips, RsiCell, MacdPill, MAsGlyph, VolFlowCell, Flag, EmaPair, SuperTrendCell, WaveTrendCell, BbpCell, VolCell, AvwapCell, RsiHistCell } from "./bits";
@@ -41,9 +42,33 @@ const SORT_VAL: Record<string, (s: Signal) => number> = {
 };
 
 function useFavorites() {
+  const { isSignedIn, user } = useUser();
   const [favs, setFavs] = useState<Set<string>>(new Set());
-  useEffect(() => { try { const r = localStorage.getItem(FAVS_KEY); if (r) setFavs(new Set(JSON.parse(r))); } catch {} }, []);
-  const toggle = (t: string) => setFavs((p) => { const n = new Set(p); if (n.has(t)) n.delete(t); else n.add(t); try { localStorage.setItem(FAVS_KEY, JSON.stringify([...n])); } catch {} return n; });
+
+  // Carga: logueado -> de la cuenta (sincronizado entre dispositivos); si no -> localStorage.
+  useEffect(() => {
+    if (isSignedIn && user) {
+      const remote = (user.unsafeMetadata?.favs as string[] | undefined) ?? [];
+      let local: string[] = [];
+      try { local = JSON.parse(localStorage.getItem(FAVS_KEY) || "[]"); } catch {}
+      const merged = [...new Set([...remote, ...local])];
+      setFavs(new Set(merged));
+      // al loguearse, sube lo que tenía en el navegador y no estaba en la cuenta
+      if (merged.length !== remote.length) {
+        user.update({ unsafeMetadata: { ...(user.unsafeMetadata as Record<string, unknown>), favs: merged } }).catch(() => {});
+      }
+    } else {
+      try { setFavs(new Set(JSON.parse(localStorage.getItem(FAVS_KEY) || "[]"))); } catch {}
+    }
+  }, [isSignedIn, user]);
+
+  const toggle = (t: string) => setFavs((p) => {
+    const n = new Set(p); if (n.has(t)) n.delete(t); else n.add(t);
+    const arr = [...n];
+    try { localStorage.setItem(FAVS_KEY, JSON.stringify(arr)); } catch {}
+    if (isSignedIn && user) user.update({ unsafeMetadata: { ...(user.unsafeMetadata as Record<string, unknown>), favs: arr } }).catch(() => {});
+    return n;
+  });
   return { favs, toggle };
 }
 
@@ -202,6 +227,14 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
                 <div className="nums text-xs font-medium text-zinc-200">{liveAge ? liveAge.txt : updated.rel}</div>
               </div>
             </div>
+            <Show when="signed-out">
+              <SignInButton mode="modal">
+                <button className="cursor-pointer rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-violet-500">Entrar</button>
+              </SignInButton>
+            </Show>
+            <Show when="signed-in">
+              <UserButton />
+            </Show>
           </div>
         </div>
       </div>
