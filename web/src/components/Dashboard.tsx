@@ -229,7 +229,7 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
             </div>
             <Show when="signed-out">
               <SignInButton mode="modal">
-                <button className="cursor-pointer rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-violet-500">Entrar</button>
+                <button className="cursor-pointer rounded-lg border border-violet-500/40 bg-violet-500/10 px-3 py-1.5 text-xs font-semibold text-violet-200 shadow-sm transition-colors hover:bg-violet-500/20" title="Entrá con Google para sincronizar tu lista entre dispositivos">Sincronizar lista</button>
               </SignInButton>
             </Show>
             <Show when="signed-in">
