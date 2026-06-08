@@ -6,7 +6,9 @@ name: build-quotes
 
 on:
   schedule:
-    - cron: "*/15 13-22 * * 1-5"
+    # Cada 5 min en horario de mercado (US 13:30-20:00 + AR hasta ~21:00 UTC).
+    # Offset :03 (no en el tope de hora) -> GitHub dropea/atrasa menos las corridas.
+    - cron: "3-58/5 13-21 * * 1-5"
   workflow_dispatch: {}
 
 permissions:
