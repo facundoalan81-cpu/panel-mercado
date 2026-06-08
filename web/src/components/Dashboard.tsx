@@ -267,20 +267,18 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
           </div>
           <div className="ml-auto flex items-center gap-3">
             <span className="hidden text-right text-[11px] text-zinc-500 md:block">{data.count} activos</span>
-            <Tip text="Argentina (BYMA): casi en tiempo real. US y ADRs: diferido ~15 min (dato gratuito). El tiempo real de las bolsas está licenciado; para análisis técnico el diferido no afecta.">
-              <span className="hidden cursor-help items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900/40 px-2.5 py-1.5 text-[10px] text-zinc-400 sm:flex">
-                <span className="inline-flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />AR al día</span>
-                <span className="text-zinc-700">·</span>
-                <span className="inline-flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-amber-400" />US ~15 min</span>
-              </span>
-            </Tip>
-            <div className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 ${freshChip ? "border-emerald-500/30 bg-emerald-500/10" : "border-amber-500/40 bg-amber-500/10"}`} title={`Precios: ${liveAge ? liveAge.label : "—"} · Indicadores: ${updated.label}`}>
-              <span className={`h-2 w-2 shrink-0 rounded-full ${freshChip ? "bg-emerald-400 motion-safe:animate-pulse" : "bg-amber-400"}`} />
-              <div className="leading-tight">
-                <div className="text-[9px] uppercase tracking-wide text-zinc-500">{liveAge ? (liveAge.fresh ? "Precios en vivo" : "Últimos precios") : "Última actualización"}</div>
-                <div className="nums text-xs font-medium text-zinc-200">{liveAge ? liveAge.txt : updated.rel}</div>
+            <Tip text={`Argentina (BYMA): casi en tiempo real. US y ADRs: diferido ~15 min (dato gratuito). El tiempo real de las bolsas está licenciado; para análisis técnico no afecta.${liveAge ? ` · Últimos precios: ${liveAge.label}` : ""}`}>
+              <div className={`flex cursor-help items-center gap-2.5 rounded-xl border px-3 py-1.5 transition-colors ${freshChip ? "border-emerald-500/25 bg-emerald-500/[0.06]" : "border-amber-500/40 bg-amber-500/10"}`}>
+                <span className="relative flex h-2 w-2 shrink-0">
+                  {freshChip && <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400/50 motion-safe:animate-ping" />}
+                  <span className={`relative inline-flex h-2 w-2 rounded-full ${freshChip ? "bg-emerald-400" : "bg-amber-400"}`} />
+                </span>
+                <div className="leading-tight">
+                  <div className="text-xs font-semibold text-zinc-100">{freshChip ? "En vivo" : "Últimos precios"}</div>
+                  <div className="text-[10px] text-zinc-500">{freshChip ? "Argentina al día · US ~15 min" : (liveAge ? liveAge.txt : updated.rel)}</div>
+                </div>
               </div>
-            </div>
+            </Tip>
           </div>
         </div>
       </div>
