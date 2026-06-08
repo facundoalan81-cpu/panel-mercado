@@ -202,7 +202,7 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
 
       {/* FILTROS */}
       <div className="space-y-2 px-4 py-2.5">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <span className="text-[11px] uppercase tracking-wide text-zinc-600">Marco</span>
           <div className="flex items-center rounded-lg border border-zinc-800 p-0.5">
             <span className="px-1.5 text-[9px] uppercase tracking-wide text-zinc-700">Intra</span>
@@ -215,6 +215,14 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
             ))}
           </div>
           <Tip text="Los marcos intradía son una foto del último cierre (se actualizan en cada corrida). Para ver el intradía en vivo, abrí el papel: el chart de TradingView del detalle es en tiempo real." className="cursor-help text-zinc-600"><Icon name="help" size={13} /></Tip>
+          <div className="ml-auto flex items-center gap-2">
+            <span className="text-[11px] uppercase tracking-wide text-zinc-600">Ver por</span>
+            <div className="flex items-center rounded-lg border border-zinc-800 p-0.5">
+              {([["pais", "País"], ["sector", "Sector"], ["ambos", "Ambos"], ["lista", "Sin agrupar"]] as const).map(([g, lbl]) => (
+                <button key={g} onClick={() => setGroupBy(g)} className={`cursor-pointer rounded-md px-2.5 py-1 text-xs transition-colors duration-200 ${groupBy === g ? "bg-zinc-200 font-medium text-zinc-900" : "text-zinc-400 hover:text-zinc-200"}`}>{lbl}</button>
+              ))}
+            </div>
+          </div>
         </div>
         <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
           <span className="mr-1 w-12 shrink-0 text-[11px] uppercase tracking-wide text-zinc-600">País</span>
@@ -242,12 +250,6 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
           ))}
           <Toggle on={onlySignals} onClick={() => setOnlySignals((v) => !v)}>Solo señales</Toggle>
           <Toggle on={onlyFavs} onClick={() => setOnlyFavs((v) => !v)}><Icon name="star" size={12} fill={onlyFavs} /> Mi lista{favs.size > 0 ? ` (${favs.size})` : ""}</Toggle>
-          <div className="ml-auto flex items-center gap-1">
-            <span className="text-[11px] text-zinc-600">Agrupar</span>
-            {([["pais", "País"], ["sector", "Sector"], ["ambos", "País×Sector"], ["lista", "Lista"]] as const).map(([g, lbl]) => (
-              <Toggle key={g} on={groupBy === g} onClick={() => setGroupBy(g)}>{lbl}</Toggle>
-            ))}
-          </div>
         </div>
       </div>
 
