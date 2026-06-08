@@ -38,4 +38,4 @@ jobs:
       - name: Heartbeat de cotizaciones (~60s) o espera si está cerrado
         run: bash data-pipeline/live_loop.sh
         env:
-          GH_PUSH_URL: https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+          DATA_DEPLOY_KEY: ${{ secrets.DATA_DEPLOY_KEY }}

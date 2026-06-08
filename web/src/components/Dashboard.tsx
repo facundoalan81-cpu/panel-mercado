@@ -106,7 +106,7 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
   // Carril COMPLETO: branch `data` por raw GitHub (CORS abierto) cada 60s. Cubre los 614 papeles (~5 min).
   useEffect(() => {
     let alive = true;
-    const url = "https://raw.githubusercontent.com/facundoalan81-cpu/panel-mercado/data/quotes-latest.json";
+    const url = "https://raw.githubusercontent.com/facundoalan81-cpu/panel-mercado-data/data/quotes-latest.json";
     const pull = async () => {
       try {
         const r = await fetch(`${url}?t=${Math.floor(Date.now() / 60000)}`, { cache: "no-store" });

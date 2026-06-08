@@ -37,9 +37,13 @@ jobs:
       - name: Calcular cotizaciones
         run: python data-pipeline/build_quotes.py
 
-      - name: Publicar al branch `data` (raw, sin redeploy)
+      - name: Publicar al branch `data` del repo de DATOS (Vercel no lo mira -> sin deploy)
+        env:
+          DATA_DEPLOY_KEY: ${{ secrets.DATA_DEPLOY_KEY }}
         run: |
-          mkdir -p _pub && cp data-pipeline/output/quotes-latest.json _pub/quotes-latest.json
+          KEYF="$(mktemp)"; printf '%s\n' "$DATA_DEPLOY_KEY" > "$KEYF"; chmod 600 "$KEYF"
+          export GIT_SSH_COMMAND="ssh -i $KEYF -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null"
+          rm -rf _pub && mkdir -p _pub && cp data-pipeline/output/quotes-latest.json _pub/quotes-latest.json
           cd _pub
           git init -q
           git config user.name "panel-bot"
@@ -47,4 +51,4 @@ jobs:
           git checkout -q -b data
           git add quotes-latest.json
           git commit -q -m "quotes $(date -u +%F-%H%M)"
-          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" data
+          git push -q -f "git@github.com:facundoalan81-cpu/panel-mercado-data.git" data

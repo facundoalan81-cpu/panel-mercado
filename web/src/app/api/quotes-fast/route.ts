@@ -4,7 +4,7 @@
 // Cache de borde corto en Vercel (s-maxage) -> el cliente lo pega a 60s y ve datos de ~1 min.
 // Si la API falla o rate-limitea, cae a raw (hasta ~5 min, pero nunca rompe).
 
-const REPO = "facundoalan81-cpu/panel-mercado";
+const REPO = "facundoalan81-cpu/panel-mercado-data";
 const API = `https://api.github.com/repos/${REPO}/contents/quotes-fast.json?ref=data-fast`;
 const RAW = `https://raw.githubusercontent.com/${REPO}/data-fast/quotes-fast.json`;
 
