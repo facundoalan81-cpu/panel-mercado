@@ -6,9 +6,9 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Panel de Análisis de Mercado",
+  title: "Radar — Fer Inversiones",
   description:
-    "Señales técnicas (RSI, MACD, medias móviles) por papel. Análisis automatizado, no es recomendación de inversión.",
+    "Radar de mercado de Fer Inversiones: señales técnicas (RSI, MACD, medias móviles) por papel. Análisis automatizado, no es recomendación de inversión.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

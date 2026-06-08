@@ -146,8 +146,8 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
       <header className="sticky top-0 z-30 border-b border-zinc-800 bg-[#09090b]/95 backdrop-blur">
         <div className="flex items-center gap-3 px-4 py-2.5">
           <div className="flex items-center gap-2 pr-2">
-            <span className="grid h-6 w-6 place-items-center rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-600 text-[11px] font-bold">P</span>
-            <span className="text-sm font-semibold tracking-tight">Panel de Mercado</span>
+            <span className="grid h-6 w-6 place-items-center rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-600 text-[11px] font-bold">R</span>
+            <span className="text-sm font-semibold tracking-tight">Radar <span className="font-normal text-zinc-500">· Fer Inversiones</span></span>
           </div>
           <nav className="flex items-center gap-0.5 overflow-x-auto">
             {TABS.map((t) => (
@@ -316,7 +316,7 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
             <span className="inline-flex items-center gap-1"><Icon name="trendUp" size={11} /> {tally.fuerte} alcistas</span>
             <span className="inline-flex items-center gap-1"><Icon name="trendUp" size={11} /> {tally.potencial} parciales</span>
             <span className="inline-flex items-center gap-1"><Icon name="alert" size={11} /> {tally.revisar} sobrecomprados</span>
-            <span>· Análisis técnico automatizado, no es recomendación de inversión.</span>
+            <span>· Radar de Fer Inversiones · by Facundo Alan · Análisis técnico automatizado, no es recomendación de inversión.</span>
           </p>
         </main>
 
