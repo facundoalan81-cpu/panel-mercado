@@ -1,0 +1,23 @@
+# node / next
+web/node_modules/
+web/.next/
+web/out/
+web/.vercel/
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# datos crudos del pipeline (se regeneran). El JSON publicado vive en web/public/data/ (sí se commitea).
+data-pipeline/output/
+
+# entorno / secrets
+.env
+.env.local
+*.local
+
+# os / tooling
+.DS_Store
+.playwright-mcp/
