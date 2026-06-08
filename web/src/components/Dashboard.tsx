@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { Show, SignInButton, UserButton, useUser } from "@clerk/nextjs";
+import { useUser } from "@clerk/nextjs";
 import type { Signal, SignalsPayload, Fundamentals } from "@/lib/types";
 import { CLASS_META, COUNTRY_META, SECTOR_ORDER, HELP, fmtPrice, fmtPct } from "@/lib/format";
 import { BiasBadge, ScorePips, RsiCell, MacdPill, MAsGlyph, VolFlowCell, Flag, EmaPair, SuperTrendCell, WaveTrendCell, BbpCell, VolCell, AvwapCell, RsiHistCell } from "./bits";
@@ -201,7 +201,7 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
     if (!live?.t) return null;
     const sec = (Date.now() - new Date(live.t).getTime()) / 1000;
     const txt = sec < 75 ? "recién" : sec < 3600 ? `hace ${Math.round(sec / 60)} min` : `hace ${Math.round(sec / 3600)} h`;
-    return { txt, fresh: sec < 22 * 60, label: new Date(live.t).toLocaleString("es-AR") };
+    return { txt, fresh: sec < 30 * 60, label: new Date(live.t).toLocaleString("es-AR") };
   }, [live, clock]);
   const freshChip = liveAge ? liveAge.fresh : !updated.stale;
 
@@ -223,18 +223,10 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
             <div className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 ${freshChip ? "border-emerald-500/30 bg-emerald-500/10" : "border-amber-500/40 bg-amber-500/10"}`} title={`Precios: ${liveAge ? liveAge.label : "—"} · Indicadores: ${updated.label}`}>
               <span className={`h-2 w-2 shrink-0 rounded-full ${freshChip ? "bg-emerald-400 motion-safe:animate-pulse" : "bg-amber-400"}`} />
               <div className="leading-tight">
-                <div className="text-[9px] uppercase tracking-wide text-zinc-500">{liveAge ? "Precios en vivo" : "Última actualización"}</div>
+                <div className="text-[9px] uppercase tracking-wide text-zinc-500">{liveAge ? (liveAge.fresh ? "Precios en vivo" : "Últimos precios") : "Última actualización"}</div>
                 <div className="nums text-xs font-medium text-zinc-200">{liveAge ? liveAge.txt : updated.rel}</div>
               </div>
             </div>
-            <Show when="signed-out">
-              <SignInButton mode="modal">
-                <button className="cursor-pointer rounded-lg border border-violet-500/40 bg-violet-500/10 px-3 py-1.5 text-xs font-semibold text-violet-200 shadow-sm transition-colors hover:bg-violet-500/20" title="Entrá con Google para sincronizar tu lista entre dispositivos">Sincronizar lista</button>
-              </SignInButton>
-            </Show>
-            <Show when="signed-in">
-              <UserButton />
-            </Show>
           </div>
         </div>
       </div>

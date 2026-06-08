@@ -92,6 +92,7 @@ _BCBA_LIDER = [
     ("METR", "METR.BA", "Metrogas", "Utilities"), ("MIRG", "MIRG.BA", "Mirgor", "Industriales"),
     ("TRAN", "TRAN.BA", "Transener", "Utilities"), ("TXAR", "TXAR.BA", "Ternium Argentina", "Materiales"),
     ("VALO", "VALO.BA", "Grupo Fin. Valores", "Financiero"),
+    ("TGNO4", "TGNO4.BA", "Transportadora Gas del Norte", "Energía"),
 ]
 
 # --- BCBA Panel General (ARS, .BA) — best-effort, varios pueden quedar 'sin datos' ---
@@ -111,6 +112,12 @@ _BCBA_GRAL = [
     ("MORI", "MORI.BA", "Morixe", "Consumo Básico"), ("OEST", "OEST.BA", "Grupo Conc. del Oeste", "Industriales"),
     ("PATA", "PATA.BA", "Importadora Patagonia", "Consumo Básico"), ("SAMI", "SAMI.BA", "S.A. San Miguel", "Consumo Básico"),
     ("SEMI", "SEMI.BA", "Molinos Juan Semino", "Consumo Básico"),
+    ("A3", "A3.BA", "A3 Mercados", "Financiero"), ("DOME", "DOME.BA", "Domec", "Consumo Discrecional"),
+    ("GARO", "GARO.BA", "Garovaglio y Zorraquín", "Industriales"), ("GCDI", "GCDI.BA", "GCDI", "Inmobiliario"),
+    ("IEB", "IEB.BA", "Grupo IEB", "Financiero"), ("INTR", "INTR.BA", "Cía. Introductora de BA", "Consumo Básico"),
+    ("LONG", "LONG.BA", "Longvie", "Consumo Discrecional"), ("MERA", "MERA.BA", "Meranol", "Materiales"),
+    ("POLL", "POLL.BA", "Polledo", "Industriales"), ("RICH", "RICH.BA", "Laboratorios Richmond", "Salud"),
+    ("RIGO", "RIGO.BA", "Rigolleau", "Consumo Básico"), ("ROSE", "ROSE.BA", "Instituto Rosenbusch", "Salud"),
 ]
 
 # --- Defensivas US (tag 🛡️) ---
