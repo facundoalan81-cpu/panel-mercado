@@ -147,11 +147,8 @@ function MoverRow({ s, onSelect }: { s: Signal; onSelect: (s: Signal) => void })
 }
 
 export function MarketPanel({ items, fng, onSelect }: { items: Signal[]; fng?: Fng; onSelect?: (s: Signal) => void }) {
-  const { comprando, vendiendo, total, sectors, subiendo, bajando } = useMemo(() => {
+  const { sectors, subiendo, bajando } = useMemo(() => {
     const scored = items.filter((s) => s.status === "ok" && s.bias).map((s) => ({ s, v: s.bias!.score }));
-    const total = scored.length;
-    const comprando = scored.filter((x) => x.v >= 50).length;
-    const vendiendo = total - comprando;
     const bySec: Record<string, { sum: number; n: number }> = {};
     for (const { s, v } of scored) {
       if (!s.sector) continue;
@@ -160,21 +157,12 @@ export function MarketPanel({ items, fng, onSelect }: { items: Signal[]; fng?: F
     }
     const sectors = SECTOR_ORDER.filter((k) => bySec[k]).map((k) => ({ name: k, pct: Math.round(bySec[k].sum / bySec[k].n), n: bySec[k].n }));
     const withChg = items.filter((s) => s.status === "ok" && s.chg_pct != null).sort((a, b) => (b.chg_pct ?? 0) - (a.chg_pct ?? 0));
-    return { comprando, vendiendo, total, sectors, subiendo: withChg.slice(0, 4), bajando: withChg.slice(-4).reverse() };
+    return { sectors, subiendo: withChg.slice(0, 4), bajando: withChg.slice(-4).reverse() };
   }, [items]);
 
   return (
     <div className="space-y-5">
       {fng?.history?.length ? <FearGreed fng={fng} /> : null}
-
-      <section>
-        <h3 className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-zinc-500">Del filtro actual</h3>
-        <div className="flex items-center gap-4 rounded-lg border border-zinc-800 bg-zinc-900/30 px-3 py-2 text-xs">
-          <span className="inline-flex items-center gap-1 text-green-400"><Icon name="arrowUp" size={12} />{comprando} comprando</span>
-          <span className="inline-flex items-center gap-1 text-red-400"><Icon name="arrowDown" size={12} />{vendiendo} vendiendo</span>
-          <span className="ml-auto text-zinc-600">de {total}</span>
-        </div>
-      </section>
 
       {onSelect && (subiendo.length > 0 || bajando.length > 0) && (
         <section>
