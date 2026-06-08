@@ -8,10 +8,10 @@ name: build-signals
 
 on:
   schedule:
-    # Cada 30 min en horario de mercado (UTC, días hábiles) -> precios + señales lo más frescos posible.
-    # Yahoo/yfinance tiene ~15 min de delay; el job tarda ~15 min -> frescura efectiva ~30-45 min.
-    # Si Yahoo empieza a throttlear las IPs de GitHub, bajar la frecuencia o usar self-hosted runner.
-    - cron: "*/30 13-22 * * 1-5"
+    # Pipeline PESADO (indicadores + intradía + marcos): cada hora en horario de mercado.
+    # La frescura de PRECIOS la lleva build-quotes.yml (cada 15 min, liviano).
+    # Si Yahoo throttlea las IPs de GitHub, bajar frecuencia o usar self-hosted runner.
+    - cron: "0 13-22 * * 1-5"
   workflow_dispatch: {}        # permite correrlo a mano desde la pestaña Actions
 
 permissions:

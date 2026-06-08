@@ -72,15 +72,30 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
   const [selected, setSelected] = useState<Signal | null>(null);
   const [detailWide, setDetailWide] = useState(false);
   const [clock, setClock] = useState("");
+  const [live, setLive] = useState<{ t: string; q: Record<string, { p: number; c: number | null }> } | null>(null);
 
   useEffect(() => { const tick = () => setClock(new Date().toLocaleTimeString("es-AR", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" })); tick(); const id = setInterval(tick, 1000); return () => clearInterval(id); }, []);
+
+  // Precios EN VIVO: polling al branch `data` (raw GitHub, CORS abierto) cada 60s -> refresca sin recargar.
+  useEffect(() => {
+    let alive = true;
+    const url = "https://raw.githubusercontent.com/facundoalan81-cpu/panel-mercado/data/quotes-latest.json";
+    const pull = async () => {
+      try {
+        const r = await fetch(`${url}?t=${Math.floor(Date.now() / 60000)}`, { cache: "no-store" });
+        if (r.ok && alive) setLive(await r.json());
+      } catch { /* sin live: cae a los precios del JSON */ }
+    };
+    pull();
+    const id = setInterval(pull, 60000);
+    return () => { alive = false; clearInterval(id); };
+  }, []);
 
   // viewItems = ítems con los INDICADORES del timeframe elegido.
   // El precio y la variación son SIEMPRE los actuales (no cambian por el marco); solo cambian los indicadores.
   const viewItems = useMemo(() => {
-    if (tf === "1d") return data.items;
     const META = ["ticker", "name", "exchange", "tv", "country", "sector", "asset_class", "defensive", "is_adr", "ar_panel", "currency"] as const;
-    return data.items.map((it) => {
+    const base = tf === "1d" ? data.items : data.items.map((it) => {
       const meta = Object.fromEntries(META.map((k) => [k, it[k as keyof Signal]]));
       const e = it.tf?.[tf];
       return {
@@ -89,7 +104,13 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
         price: it.price, chg_pct: it.chg_pct, spark: it.spark, ohlc: it.ohlc,
       } as Signal;
     });
-  }, [data.items, tf]);
+    // precio/% EN VIVO sobreescriben los del JSON (los indicadores quedan del último pipeline)
+    if (!live?.q) return base;
+    return base.map((s) => {
+      const lq = live.q[s.ticker];
+      return lq && lq.p != null ? { ...s, price: lq.p, chg_pct: lq.c } : s;
+    });
+  }, [data.items, tf, live]);
 
   const byTicker = useMemo(() => new Map(viewItems.map((s) => [s.ticker, s])), [viewItems]);
   const dailyByTicker = useMemo(() => new Map(data.items.map((s) => [s.ticker, s])), [data.items]);
@@ -150,6 +171,14 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
 
   const tally = useMemo(() => { const c = (k: string) => viewItems.filter((s) => s.classification === k).length; return { fuerte: c("FUERTE"), potencial: c("POTENCIAL"), revisar: c("A_REVISAR") }; }, [viewItems]);
   const updated = useMemo(() => { const d = new Date(data.generated_at); const h = (Date.now() - d.getTime()) / 36e5; return { rel: h < 1 ? "recién" : h < 36 ? `hace ${Math.round(h)} h` : `hace ${Math.round(h / 24)} d`, stale: h > 48, label: d.toLocaleString("es-AR") }; }, [data.generated_at]);
+  const liveAge = useMemo(() => {
+    void clock; // re-evalúa cada segundo para refrescar el "hace X"
+    if (!live?.t) return null;
+    const sec = (Date.now() - new Date(live.t).getTime()) / 1000;
+    const txt = sec < 75 ? "recién" : sec < 3600 ? `hace ${Math.round(sec / 60)} min` : `hace ${Math.round(sec / 3600)} h`;
+    return { txt, fresh: sec < 22 * 60, label: new Date(live.t).toLocaleString("es-AR") };
+  }, [live, clock]);
+  const freshChip = liveAge ? liveAge.fresh : !updated.stale;
 
   const toggleSort = (key: string) => setSort((p) => (p?.key === key ? (p.dir === "desc" ? { key, dir: "asc" } : null) : { key, dir: "desc" }));
 
@@ -166,11 +195,11 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
           </div>
           <div className="ml-auto flex items-center gap-3">
             <span className="hidden text-right text-[11px] text-zinc-500 md:block">{data.count} activos</span>
-            <div className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 ${updated.stale ? "border-amber-500/40 bg-amber-500/10" : "border-emerald-500/30 bg-emerald-500/10"}`} title={`Última actualización: ${updated.label}`}>
-              <span className={`h-2 w-2 shrink-0 rounded-full ${updated.stale ? "bg-amber-400" : "bg-emerald-400 motion-safe:animate-pulse"}`} />
+            <div className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 ${freshChip ? "border-emerald-500/30 bg-emerald-500/10" : "border-amber-500/40 bg-amber-500/10"}`} title={`Precios: ${liveAge ? liveAge.label : "—"} · Indicadores: ${updated.label}`}>
+              <span className={`h-2 w-2 shrink-0 rounded-full ${freshChip ? "bg-emerald-400 motion-safe:animate-pulse" : "bg-amber-400"}`} />
               <div className="leading-tight">
-                <div className="text-[9px] uppercase tracking-wide text-zinc-500">Última actualización</div>
-                <div className="nums text-xs font-medium text-zinc-200">{updated.rel}</div>
+                <div className="text-[9px] uppercase tracking-wide text-zinc-500">{liveAge ? "Precios en vivo" : "Última actualización"}</div>
+                <div className="nums text-xs font-medium text-zinc-200">{liveAge ? liveAge.txt : updated.rel}</div>
               </div>
             </div>
           </div>

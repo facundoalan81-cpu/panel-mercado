@@ -1,0 +1,48 @@
+name: build-quotes
+
+# Fetch liviano de SOLO cotizaciones (precio + % día), cada ~15 min en horario de mercado.
+# Publica quotes-latest.json en el branch `data` (force-push, sin historial) -> el front lo lee
+# por raw.githubusercontent (CORS abierto) y refresca precios en vivo SIN redeploy de Vercel.
+
+on:
+  schedule:
+    - cron: "*/15 13-22 * * 1-5"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+# evita corridas solapadas
+concurrency:
+  group: build-quotes
+  cancel-in-progress: true
+
+jobs:
+  quotes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Instalar dependencias
+        run: pip install -r data-pipeline/requirements.txt
+
+      - name: Calcular cotizaciones
+        run: python data-pipeline/build_quotes.py
+
+      - name: Publicar al branch `data` (raw, sin redeploy)
+        run: |
+          mkdir -p _pub && cp data-pipeline/output/quotes-latest.json _pub/quotes-latest.json
+          cd _pub
+          git init -q
+          git config user.name "panel-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -q -b data
+          git add quotes-latest.json
+          git commit -q -m "quotes $(date -u +%F-%H%M)"
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" data
