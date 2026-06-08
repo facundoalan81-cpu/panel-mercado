@@ -47,6 +47,8 @@ export function DetailContent({ s, onClose, onAnalysis }: { s: Signal; onClose: 
           {s.score != null && <span className="ml-auto mb-1"><ScorePips score={s.score} /></span>}
         </div>
 
+        <button onClick={() => onAnalysis(s.ticker)} className="mb-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-violet-600/90 py-2.5 text-sm font-medium text-white transition-colors hover:bg-violet-600"><Icon name="sparkles" size={15} /> Abrir modo Análisis</button>
+
         {s.status === "ok" && <div className="mb-3 rounded-lg border border-zinc-800 bg-zinc-900/40 px-3 py-2 text-xs text-zinc-300">{signalHint(s)}</div>}
 
         <TradingViewChart symbol={s.tv} height={260} />
@@ -93,8 +95,7 @@ export function DetailContent({ s, onClose, onAnalysis }: { s: Signal; onClose: 
           </>
         )}
 
-        <button onClick={() => onAnalysis(s.ticker)} className="mt-5 block w-full cursor-pointer rounded-lg bg-violet-600/90 py-3 text-center text-sm font-medium text-white transition-colors hover:bg-violet-600">Abrir modo Análisis</button>
-        <a href={`https://www.tradingview.com/chart/?symbol=${encodeURIComponent(s.tv)}`} target="_blank" rel="noopener noreferrer" className="mt-2 flex items-center justify-center gap-1 text-center text-xs text-zinc-500 hover:text-zinc-300">Abrir en TradingView <Icon name="external" size={11} /></a>
+        <a href={`https://www.tradingview.com/chart/?symbol=${encodeURIComponent(s.tv)}`} target="_blank" rel="noopener noreferrer" className="mt-5 flex items-center justify-center gap-1 text-center text-xs text-zinc-500 hover:text-zinc-300">Abrir en TradingView <Icon name="external" size={11} /></a>
         <p className="mt-4 text-[11px] leading-relaxed text-zinc-600">Chart y confluencia: TradingView (tiempo real). Señal propia: cierre diario. No es recomendación de inversión.</p>
       </div>
     </div>

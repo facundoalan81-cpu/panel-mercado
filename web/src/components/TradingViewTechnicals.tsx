@@ -20,7 +20,7 @@ export function TradingViewTechnicals({ symbol, height = 400 }: { symbol: string
     script.innerHTML = JSON.stringify({
       interval: "1D",
       width: "100%",
-      isTransparent: true,
+      isTransparent: false,
       height,
       symbol,
       showIntervalTabs: true,

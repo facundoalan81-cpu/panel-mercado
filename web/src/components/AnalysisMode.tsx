@@ -56,13 +56,15 @@ export function AnalysisMode({
   const [expand, setExpand] = useState(false);
   const up = (s.chg_pct ?? 0) >= 0;
 
+  // Pares del MISMO sector (no papeles random). Orden estable: primero los que tienen
+  // fundamentals, después alfabético -> no se reordena por % al tocar uno.
   const rail = useMemo(
     () =>
       all
-        .filter((x) => x.asset_class === "stock" && funds[x.ticker] && x.ticker !== s.ticker)
-        .sort((a, b) => Math.abs(b.chg_pct ?? 0) - Math.abs(a.chg_pct ?? 0))
-        .slice(0, 16),
-    [all, funds, s.ticker],
+        .filter((x) => x.ticker !== s.ticker && x.asset_class === "stock" && x.sector === s.sector)
+        .sort((a, b) => (Number(!!funds[b.ticker]) - Number(!!funds[a.ticker])) || a.ticker.localeCompare(b.ticker))
+        .slice(0, 24),
+    [all, funds, s.ticker, s.sector],
   );
 
   return (
@@ -150,12 +152,13 @@ export function AnalysisMode({
           <div className="sticky top-6 flex flex-col rounded-2xl border border-zinc-800 bg-zinc-900/30">
             <div className="flex items-center justify-between border-b border-zinc-800 px-4 py-3">
               <div>
-                <div className="text-sm font-semibold">Resumen de activos</div>
-                <div className="text-[11px] text-zinc-600">Logo · símbolo · cambio · precio</div>
+                <div className="text-sm font-semibold">Pares del sector</div>
+                <div className="text-[11px] text-zinc-600">{s.sector} · tocá para analizar</div>
               </div>
               <button onClick={onClose} className="text-zinc-500 hover:text-zinc-200">✕</button>
             </div>
             <div className="max-h-[60vh] overflow-y-auto">
+              {rail.length === 0 && <div className="px-4 py-6 text-center text-xs text-zinc-600">Sin otros papeles del sector.</div>}
               {rail.map((x) => (
                 <button key={x.ticker} onClick={() => onSelect(x.ticker)} className="flex w-full items-center gap-3 border-b border-zinc-800/60 px-4 py-2.5 text-left hover:bg-zinc-800/40">
                   <Logo s={x} size={26} />

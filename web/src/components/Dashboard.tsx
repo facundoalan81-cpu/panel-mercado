@@ -142,12 +142,24 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
 
   return (
     <div className="min-h-full">
+      {/* BANNER de marca */}
+      <div className="relative overflow-hidden border-b border-zinc-800 bg-gradient-to-r from-violet-600/25 via-fuchsia-600/10 to-transparent">
+        <div className="pointer-events-none absolute -left-8 -top-10 h-32 w-32 rounded-full bg-violet-600/20 blur-3xl" />
+        <div className="flex items-center gap-3 px-4 py-3">
+          <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-600 text-base font-bold shadow-lg shadow-violet-900/40">FI</span>
+          <div className="leading-tight">
+            <div className="text-lg font-bold tracking-tight">Fer Inversiones</div>
+            <div className="text-xs text-violet-300/80">Radar de mercado · análisis técnico</div>
+          </div>
+          <span className="ml-auto hidden text-right text-[11px] leading-tight text-zinc-500 sm:block">{data.count} activos en seguimiento<br /><span className="text-zinc-600">actualizado {updated.rel}</span></span>
+        </div>
+      </div>
       {/* NAV */}
       <header className="sticky top-0 z-30 border-b border-zinc-800 bg-[#09090b]/95 backdrop-blur">
         <div className="flex items-center gap-3 px-4 py-2.5">
           <div className="flex items-center gap-2 pr-2">
             <span className="grid h-6 w-6 place-items-center rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-600 text-[11px] font-bold">R</span>
-            <span className="text-sm font-semibold tracking-tight">Radar <span className="font-normal text-zinc-500">· Fer Inversiones</span></span>
+            <span className="text-sm font-semibold tracking-tight">Radar</span>
           </div>
           <nav className="flex items-center gap-0.5 overflow-x-auto">
             {TABS.map((t) => (
