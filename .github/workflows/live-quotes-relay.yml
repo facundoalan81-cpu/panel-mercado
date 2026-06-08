@@ -1,8 +1,8 @@
 name: live-quotes-relay
 
-# Mitad del ping-pong del carril rápido (ver live-quotes.yml). Se lanza cuando live-quotes termina,
-# corre el mismo heartbeat (~8 min) y al terminar relanza a live-quotes. Entre las dos, la cadena
-# de precios en vivo nunca se corta, sin depender del schedule de GitHub. Runner nuevo = IP nueva.
+# Respaldo del carril rápido (ver live-quotes.yml). Se lanza cuando live-quotes termina y corre el
+# mismo loop largo hasta el cierre. Sirve para la cola de la sesión cuando live-quotes llega al tope
+# de ~4h50m antes del cierre. Pocos "saltos" por día -> cadena confiable.
 
 on:
   workflow_run:
@@ -13,13 +13,13 @@ permissions:
   contents: write
 
 concurrency:
-  group: live-quotes
+  group: live-quotes-b   # grupo PROPIO (no compartido) para no auto-cancelarse con live-quotes
   cancel-in-progress: true
 
 jobs:
   fast:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 300
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

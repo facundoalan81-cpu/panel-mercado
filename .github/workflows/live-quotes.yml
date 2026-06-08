@@ -1,12 +1,13 @@
 name: live-quotes
 
-# Carril RÁPIDO (~1 min) AUTO-SOSTENIDO, sin depender del schedule de GitHub (que en repos nuevos
-# tarda en arrancar). Funciona como ping-pong con live-quotes-relay: cada una se relanza cuando la
-# otra termina (workflow_run). Así la cadena nunca se corta y cada corrida es un runner nuevo (IP nueva).
-#   - mercado abierto: loop interno ~8 min refrescando cada ~60s -> publica quotes-fast.json en `data-fast`.
-#   - mercado cerrado: duerme 10 min y sale (la cadena sigue viva, barata).
+# Carril RÁPIDO (~1 min). Estrategia robusta: UN loop largo que corre hasta el cierre del mercado
+# (o tope ~4h50m por el límite de 6h del runner), refrescando cada ~70s. Con UN disparo se cubre
+# casi toda la sesión SIN saltos frágiles. Para la cola de la sesión (>5h) hay un ping-pong de
+# respaldo con live-quotes-relay. schedule a la apertura para arrancar solo (cuando GitHub lo active).
+#   - mercado abierto: loop hasta el cierre -> publica quotes-fast.json en `data-fast`.
+#   - mercado cerrado: sale (arranca en la próxima apertura).
 # Solo papeles calientes (~150: todo AR + ADRs + top US). El front lo lee por /api/quotes-fast.
-# Bootstrap: una corrida manual (workflow_dispatch) arranca la cadena.
+# Bootstrap: workflow_dispatch.
 
 on:
   workflow_dispatch: {}
@@ -14,19 +15,19 @@ on:
     workflows: ["live-quotes-relay"]
     types: [completed]
   schedule:
-    - cron: "2 13 * * 1-5"   # red de seguridad: 1 vez al abrir el mercado por si la cadena se corta
+    - cron: "2 13 * * 1-5"   # arranca a la apertura (cuando GitHub active el cron del repo nuevo)
 
 permissions:
   contents: write
 
 concurrency:
-  group: live-quotes
+  group: live-quotes-a   # grupo PROPIO (no compartido) para no auto-cancelarse con el relay
   cancel-in-progress: true
 
 jobs:
   fast:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 300
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
