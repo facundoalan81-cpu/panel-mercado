@@ -152,8 +152,8 @@ export function AnalysisMode({
           <div className="sticky top-6 flex flex-col rounded-2xl border border-zinc-800 bg-zinc-900/30">
             <div className="flex items-center justify-between border-b border-zinc-800 px-4 py-3">
               <div>
-                <div className="text-sm font-semibold">Pares del sector</div>
-                <div className="text-[11px] text-zinc-600">{s.sector} · tocá para analizar</div>
+                <div className="text-sm font-semibold">Similares</div>
+                <div className="text-[11px] text-zinc-600">Mismo sector · {s.sector}</div>
               </div>
               <button onClick={onClose} className="text-zinc-500 hover:text-zinc-200">✕</button>
             </div>

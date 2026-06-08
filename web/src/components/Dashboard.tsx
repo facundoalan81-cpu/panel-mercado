@@ -146,9 +146,9 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
       <div className="relative overflow-hidden border-b border-zinc-800 bg-gradient-to-r from-violet-600/25 via-fuchsia-600/10 to-transparent">
         <div className="pointer-events-none absolute -left-8 -top-10 h-32 w-32 rounded-full bg-violet-600/20 blur-3xl" />
         <div className="flex items-center gap-3 px-4 py-3">
-          <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-600 text-base font-bold shadow-lg shadow-violet-900/40">FI</span>
+          <span className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-violet-700 font-serif text-2xl font-bold tracking-tighter shadow-lg shadow-violet-900/50 ring-1 ring-white/15">FI</span>
           <div className="leading-tight">
-            <div className="text-lg font-bold tracking-tight">Fer Inversiones</div>
+            <div className="text-xl font-bold tracking-tight">Fer Inversiones</div>
             <div className="text-xs text-violet-300/80">Radar de mercado · análisis técnico</div>
           </div>
           <span className="ml-auto hidden text-right text-[11px] leading-tight text-zinc-500 sm:block">{data.count} activos en seguimiento<br /><span className="text-zinc-600">actualizado {updated.rel}</span></span>
@@ -157,10 +157,6 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
       {/* NAV */}
       <header className="sticky top-0 z-30 border-b border-zinc-800 bg-[#09090b]/95 backdrop-blur">
         <div className="flex items-center gap-3 px-4 py-2.5">
-          <div className="flex items-center gap-2 pr-2">
-            <span className="grid h-6 w-6 place-items-center rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-600 text-[11px] font-bold">R</span>
-            <span className="text-sm font-semibold tracking-tight">Radar</span>
-          </div>
           <nav className="flex items-center gap-0.5 overflow-x-auto">
             {TABS.map((t) => (
               <button key={t.id} onClick={() => setTab(t.id)} className={`shrink-0 cursor-pointer rounded-md px-2.5 py-1 text-sm transition-colors duration-200 ${tab === t.id ? "bg-zinc-800 text-zinc-100" : "text-zinc-500 hover:text-zinc-200"}`}>{t.label}</button>
