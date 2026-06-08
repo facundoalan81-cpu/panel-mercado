@@ -45,7 +45,13 @@ jobs:
             echo "Sin cambios en las señales."
           else
             git commit -m "data: señales $(date -u +%F-%H%M)"
-            git push
+            # Reintento con rebase: si alguien más pusheó a main mientras corríamos, no fallar.
+            for i in 1 2 3 4 5; do
+              git push && { echo "push ok"; break; }
+              echo "push rechazado (race) -> pull --rebase e intento $i"
+              git pull --rebase --autostash origin main || true
+              sleep 3
+            done
           fi
 
       - name: Guardar JSON como artifact (debug)
