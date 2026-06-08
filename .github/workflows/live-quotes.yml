@@ -1,0 +1,67 @@
+name: live-quotes
+
+# Carril RÁPIDO (~1 min) AUTO-SOSTENIDO, sin depender del schedule de GitHub (que en repos nuevos
+# tarda en arrancar). Cada corrida se re-encadena sola al terminar (workflow_run sobre sí misma):
+#   - en mercado abierto: loop interno de ~4 min refrescando cada ~60s -> publica quotes-fast.json
+#     en el branch `data-fast`. Al terminar, se relanza (runner nuevo = IP nueva -> no hammerea Yahoo).
+#   - en mercado cerrado: duerme ~50 min y sale (la cadena sigue viva, barata).
+# Solo papeles calientes (~150: todo AR + ADRs + top US). El front lo lee por /api/quotes-fast.
+# Bootstrap: una corrida manual (workflow_dispatch) arranca la cadena. schedule diario = red de seguridad.
+
+on:
+  workflow_dispatch: {}
+  workflow_run:
+    workflows: ["live-quotes"]
+    types: [completed]
+  schedule:
+    - cron: "2 13 * * 1-5"   # red de seguridad: 1 vez al abrir el mercado por si la cadena se corta
+
+permissions:
+  contents: write
+
+concurrency:
+  group: live-quotes
+  cancel-in-progress: true   # un dispatch manual / la red de seguridad pueden preemptar la espera
+
+jobs:
+  fast:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Instalar dependencias
+        run: pip install -r data-pipeline/requirements.txt
+
+      - name: Heartbeat de cotizaciones (~60s) o espera si está cerrado
+        run: |
+          DOW=$(date -u +%u); MIN=$((10#$(date -u +%H%M)))
+          # Mercado: Lun-Vie, 13:25-20:05 UTC (cubre US + ADRs argentinos).
+          if [ "$DOW" -gt 5 ] || [ "$MIN" -lt 1325 ] || [ "$MIN" -gt 2005 ]; then
+            echo "mercado cerrado ($MIN UTC, dia $DOW) -> duermo 50 min y la cadena reinicia"
+            sleep 3000; exit 0
+          fi
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "panel-bot"
+          REPO="https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+          mkdir -p _pub && (cd _pub && git init -q && git checkout -q -b data-fast)
+          END=$((SECONDS+240))   # ~4 min, después se re-encadena con IP nueva
+          n=0
+          while [ $SECONDS -lt $END ]; do
+            n=$((n+1))
+            python data-pipeline/build_quotes.py --fast || true
+            if [ -f data-pipeline/output/quotes-fast.json ]; then
+              cp data-pipeline/output/quotes-fast.json _pub/quotes-fast.json
+              (cd _pub && git add quotes-fast.json && git commit -q -m "fast $(date -u +%H%M%S)" && git push -q -f "$REPO" data-fast)
+              echo "ciclo $n publicado ($(date -u +%H:%M:%S))"
+            else
+              echo "ciclo $n sin datos"
+            fi
+            sleep 50
+          done
+          echo "loop ok: $n ciclos -> re-encadeno"

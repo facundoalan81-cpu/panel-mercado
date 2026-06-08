@@ -97,11 +97,13 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
   const [selected, setSelected] = useState<Signal | null>(null);
   const [detailWide, setDetailWide] = useState(false);
   const [clock, setClock] = useState("");
-  const [live, setLive] = useState<{ t: string; q: Record<string, { p: number; c: number | null }> } | null>(null);
+  type Quotes = { t: string; q: Record<string, { p: number; c: number | null }> };
+  const [live, setLive] = useState<Quotes | null>(null);        // carril completo (~5 min, 614 papeles)
+  const [liveFast, setLiveFast] = useState<Quotes | null>(null); // carril rápido (~1 min, ~150 calientes)
 
   useEffect(() => { const tick = () => setClock(new Date().toLocaleTimeString("es-AR", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" })); tick(); const id = setInterval(tick, 1000); return () => clearInterval(id); }, []);
 
-  // Precios EN VIVO: polling al branch `data` (raw GitHub, CORS abierto) cada 60s -> refresca sin recargar.
+  // Carril COMPLETO: branch `data` por raw GitHub (CORS abierto) cada 60s. Cubre los 614 papeles (~5 min).
   useEffect(() => {
     let alive = true;
     const url = "https://raw.githubusercontent.com/facundoalan81-cpu/panel-mercado/data/quotes-latest.json";
@@ -115,6 +117,23 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
     const id = setInterval(pull, 60000);
     return () => { alive = false; clearInterval(id); };
   }, []);
+
+  // Carril RÁPIDO: proxy propio /api/quotes-fast (esquiva el cache de raw) cada 45s. Solo papeles calientes (~1 min).
+  useEffect(() => {
+    let alive = true;
+    const pull = async () => {
+      try {
+        const r = await fetch("/api/quotes-fast", { cache: "no-store" });
+        if (r.ok && alive) { const j = await r.json(); if (j?.t) setLiveFast(j); }
+      } catch { /* sin fast: queda el carril completo */ }
+    };
+    pull();
+    const id = setInterval(pull, 45000);
+    return () => { alive = false; clearInterval(id); };
+  }, []);
+
+  // Mapa de precios efectivo: el rápido pisa al completo para los papeles que cubre.
+  const liveQ = useMemo(() => ({ ...(live?.q ?? {}), ...(liveFast?.q ?? {}) }), [live, liveFast]);
 
   // viewItems = ítems con los INDICADORES del timeframe elegido.
   // El precio y la variación son SIEMPRE los actuales (no cambian por el marco); solo cambian los indicadores.
@@ -130,12 +149,12 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
       } as Signal;
     });
     // precio/% EN VIVO sobreescriben los del JSON (los indicadores quedan del último pipeline)
-    if (!live?.q) return base;
+    if (!Object.keys(liveQ).length) return base;
     return base.map((s) => {
-      const lq = live.q[s.ticker];
+      const lq = liveQ[s.ticker];
       return lq && lq.p != null ? { ...s, price: lq.p, chg_pct: lq.c } : s;
     });
-  }, [data.items, tf, live]);
+  }, [data.items, tf, liveQ]);
 
   const byTicker = useMemo(() => new Map(viewItems.map((s) => [s.ticker, s])), [viewItems]);
   const dailyByTicker = useMemo(() => new Map(data.items.map((s) => [s.ticker, s])), [data.items]);
@@ -198,11 +217,13 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
   const updated = useMemo(() => { const d = new Date(data.generated_at); const h = (Date.now() - d.getTime()) / 36e5; return { rel: h < 1 ? "recién" : h < 36 ? `hace ${Math.round(h)} h` : `hace ${Math.round(h / 24)} d`, stale: h > 48, label: d.toLocaleString("es-AR") }; }, [data.generated_at]);
   const liveAge = useMemo(() => {
     void clock; // re-evalúa cada segundo para refrescar el "hace X"
-    if (!live?.t) return null;
-    const sec = (Date.now() - new Date(live.t).getTime()) / 1000;
-    const txt = sec < 75 ? "recién" : sec < 3600 ? `hace ${Math.round(sec / 60)} min` : `hace ${Math.round(sec / 3600)} h`;
-    return { txt, fresh: sec < 30 * 60, label: new Date(live.t).toLocaleString("es-AR") };
-  }, [live, clock]);
+    const ts = [liveFast?.t, live?.t].filter(Boolean).map((t) => new Date(t as string).getTime());
+    if (!ts.length) return null;
+    const newest = Math.max(...ts);
+    const sec = (Date.now() - newest) / 1000;
+    const txt = sec < 90 ? "recién" : sec < 3600 ? `hace ${Math.round(sec / 60)} min` : `hace ${Math.round(sec / 3600)} h`;
+    return { txt, fresh: sec < 15 * 60, label: new Date(newest).toLocaleString("es-AR") };
+  }, [live, liveFast, clock]);
   const freshChip = liveAge ? liveAge.fresh : !updated.stale;
 
   const toggleSort = (key: string) => setSort((p) => (p?.key === key ? (p.dir === "desc" ? { key, dir: "asc" } : null) : { key, dir: "desc" }));
