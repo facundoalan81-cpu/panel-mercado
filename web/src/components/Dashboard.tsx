@@ -266,16 +266,27 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
             <div className="text-xs text-violet-300/80">Radar de mercado</div>
           </div>
           <div className="ml-auto flex items-center gap-3">
-            <span className="hidden text-right text-[11px] text-zinc-500 md:block">{data.count} activos</span>
-            <Tip text={`Argentina (BYMA): casi en tiempo real. US y ADRs: diferido ~15 min (dato gratuito). El tiempo real de las bolsas está licenciado; para análisis técnico no afecta.${liveAge ? ` · Últimos precios: ${liveAge.label}` : ""}`}>
-              <div className={`flex cursor-help items-center gap-2.5 rounded-xl border px-3 py-1.5 transition-colors ${freshChip ? "border-emerald-500/25 bg-emerald-500/[0.06]" : "border-amber-500/40 bg-amber-500/10"}`}>
+            <span className="hidden text-right text-[11px] text-zinc-500 lg:block">{data.count} activos</span>
+            {/* Card ARGENTINA: al día vía data912 */}
+            <Tip text="Papeles argentinos (BYMA) casi en tiempo real (vía data912). Para ejecutar, su bróker de siempre.">
+              <div className={`flex cursor-help items-center gap-2 rounded-xl border px-2.5 py-1.5 transition-colors ${freshChip ? "border-emerald-500/25 bg-emerald-500/[0.06]" : "border-zinc-800 bg-zinc-900/40"}`}>
                 <span className="relative flex h-2 w-2 shrink-0">
                   {freshChip && <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400/50 motion-safe:animate-ping" />}
-                  <span className={`relative inline-flex h-2 w-2 rounded-full ${freshChip ? "bg-emerald-400" : "bg-amber-400"}`} />
+                  <span className={`relative inline-flex h-2 w-2 rounded-full ${freshChip ? "bg-emerald-400" : "bg-zinc-500"}`} />
                 </span>
                 <div className="leading-tight">
-                  <div className="text-xs font-semibold text-zinc-100">{freshChip ? "En vivo" : "Últimos precios"}</div>
-                  <div className="text-[10px] text-zinc-500">{freshChip ? "Argentina al día · US ~15 min" : (liveAge ? liveAge.txt : updated.rel)}</div>
+                  <div className="text-[9px] uppercase tracking-wide text-zinc-500">Argentina</div>
+                  <div className={`text-xs font-semibold ${freshChip ? "text-emerald-300" : "text-zinc-300"}`}>{freshChip ? "Al día" : "Últimos precios"}</div>
+                </div>
+              </div>
+            </Tip>
+            {/* Card US/RESTO: diferido ~15 min */}
+            <Tip text="US y ADRs: diferido ~15 min (dato gratuito). El tiempo real de las bolsas está licenciado; para análisis técnico no afecta.">
+              <div className="flex cursor-help items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/40 px-2.5 py-1.5">
+                <span className="h-2 w-2 shrink-0 rounded-full bg-amber-400/90" />
+                <div className="leading-tight">
+                  <div className="text-[9px] uppercase tracking-wide text-zinc-500">US + ADRs</div>
+                  <div className="text-xs font-semibold text-zinc-300">Diferido ~15 min</div>
                 </div>
               </div>
             </Tip>
