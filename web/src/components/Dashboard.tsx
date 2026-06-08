@@ -100,6 +100,9 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
   type Quotes = { t: string; q: Record<string, { p: number; c: number | null }> };
   const [live, setLive] = useState<Quotes | null>(null);        // carril completo (~5 min, 614 papeles)
   const [liveFast, setLiveFast] = useState<Quotes | null>(null); // carril rápido (~1 min, ~150 calientes)
+  // Argentinos AL DÍA: data912 espeja BYMA casi en tiempo real (CORS abierto -> directo del browser).
+  const [liveAR, setLiveAR] = useState<Record<string, { p: number; c: number | null }> | null>(null);
+  const [arTs, setArTs] = useState<number | null>(null);
 
   useEffect(() => { const tick = () => setClock(new Date().toLocaleTimeString("es-AR", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" })); tick(); const id = setInterval(tick, 1000); return () => clearInterval(id); }, []);
 
@@ -132,6 +135,26 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
     return () => { alive = false; clearInterval(id); };
   }, []);
 
+  // Carril ARGENTINA: data912 (espeja BYMA, casi en vivo) cada 40s, directo del browser (CORS abierto).
+  // Clave = símbolo BYMA = nuestro ticker para los papeles BCBA. Si falla, los AR caen a Yahoo.
+  useEffect(() => {
+    let alive = true;
+    const pull = async () => {
+      try {
+        const r = await fetch("https://data912.com/live/arg_stocks", { cache: "no-store" });
+        if (r.ok && alive) {
+          const arr = await r.json();
+          const m: Record<string, { p: number; c: number | null }> = {};
+          for (const x of arr) if (x?.symbol && x.c != null && x.c > 0) m[x.symbol] = { p: x.c, c: x.pct_change ?? null };
+          if (Object.keys(m).length) { setLiveAR(m); setArTs(Date.now()); }
+        }
+      } catch { /* sin data912: los AR caen a Yahoo */ }
+    };
+    pull();
+    const id = setInterval(pull, 40000);
+    return () => { alive = false; clearInterval(id); };
+  }, []);
+
   // Mapa de precios efectivo: el rápido pisa al completo para los papeles que cubre.
   const liveQ = useMemo(() => ({ ...(live?.q ?? {}), ...(liveFast?.q ?? {}) }), [live, liveFast]);
 
@@ -149,12 +172,14 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
       } as Signal;
     });
     // precio/% EN VIVO sobreescriben los del JSON (los indicadores quedan del último pipeline)
-    if (!Object.keys(liveQ).length) return base;
+    // Prioridad: data912 (Argentina, al día) > Yahoo rápido/completo (diferido ~15 min).
     return base.map((s) => {
+      const ar = s.exchange === "BCBA" ? liveAR?.[s.ticker] : null;
+      if (ar && ar.p != null) return { ...s, price: ar.p, chg_pct: ar.c };
       const lq = liveQ[s.ticker];
       return lq && lq.p != null ? { ...s, price: lq.p, chg_pct: lq.c } : s;
     });
-  }, [data.items, tf, liveQ]);
+  }, [data.items, tf, liveQ, liveAR]);
 
   const byTicker = useMemo(() => new Map(viewItems.map((s) => [s.ticker, s])), [viewItems]);
   const dailyByTicker = useMemo(() => new Map(data.items.map((s) => [s.ticker, s])), [data.items]);
@@ -218,12 +243,13 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
   const liveAge = useMemo(() => {
     void clock; // re-evalúa cada segundo para refrescar el "hace X"
     const ts = [liveFast?.t, live?.t].filter(Boolean).map((t) => new Date(t as string).getTime());
+    if (arTs) ts.push(arTs); // data912 (Argentina al día) también cuenta como fuente fresca
     if (!ts.length) return null;
     const newest = Math.max(...ts);
     const sec = (Date.now() - newest) / 1000;
     const txt = sec < 90 ? "recién" : sec < 3600 ? `hace ${Math.round(sec / 60)} min` : `hace ${Math.round(sec / 3600)} h`;
     return { txt, fresh: sec < 15 * 60, label: new Date(newest).toLocaleString("es-AR") };
-  }, [live, liveFast, clock]);
+  }, [live, liveFast, arTs, clock]);
   const freshChip = liveAge ? liveAge.fresh : !updated.stale;
 
   const toggleSort = (key: string) => setSort((p) => (p?.key === key ? (p.dir === "desc" ? { key, dir: "asc" } : null) : { key, dir: "desc" }));
@@ -241,6 +267,13 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
           </div>
           <div className="ml-auto flex items-center gap-3">
             <span className="hidden text-right text-[11px] text-zinc-500 md:block">{data.count} activos</span>
+            <Tip text="Argentina (BYMA): casi en tiempo real. US y ADRs: diferido ~15 min (dato gratuito). El tiempo real de las bolsas está licenciado; para análisis técnico el diferido no afecta.">
+              <span className="hidden cursor-help items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900/40 px-2.5 py-1.5 text-[10px] text-zinc-400 sm:flex">
+                <span className="inline-flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />AR al día</span>
+                <span className="text-zinc-700">·</span>
+                <span className="inline-flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-amber-400" />US ~15 min</span>
+              </span>
+            </Tip>
             <div className={`flex items-center gap-2 rounded-lg border px-3 py-1.5 ${freshChip ? "border-emerald-500/30 bg-emerald-500/10" : "border-amber-500/40 bg-amber-500/10"}`} title={`Precios: ${liveAge ? liveAge.label : "—"} · Indicadores: ${updated.label}`}>
               <span className={`h-2 w-2 shrink-0 rounded-full ${freshChip ? "bg-emerald-400 motion-safe:animate-pulse" : "bg-amber-400"}`} />
               <div className="leading-tight">
