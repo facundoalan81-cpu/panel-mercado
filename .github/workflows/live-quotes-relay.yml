@@ -1,0 +1,34 @@
+name: live-quotes-relay
+
+# Mitad del ping-pong del carril rápido (ver live-quotes.yml). Se lanza cuando live-quotes termina,
+# corre el mismo heartbeat (~8 min) y al terminar relanza a live-quotes. Entre las dos, la cadena
+# de precios en vivo nunca se corta, sin depender del schedule de GitHub. Runner nuevo = IP nueva.
+
+on:
+  workflow_run:
+    workflows: ["live-quotes"]
+    types: [completed]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: live-quotes
+  cancel-in-progress: true
+
+jobs:
+  fast:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Instalar dependencias
+        run: pip install -r data-pipeline/requirements.txt
+      - name: Heartbeat de cotizaciones (~60s) o espera si está cerrado
+        run: bash data-pipeline/live_loop.sh
+        env:
+          GH_PUSH_URL: https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
