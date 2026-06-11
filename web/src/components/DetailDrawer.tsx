@@ -52,7 +52,17 @@ export function DetailContent({ s, onClose, onAnalysis, wide, onToggleWide }: { 
 
         <button onClick={() => onAnalysis(s.ticker)} className="mb-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-violet-600/90 py-2.5 text-sm font-medium text-white transition-colors hover:bg-violet-600"><Icon name="sparkles" size={15} /> Abrir modo Análisis</button>
 
-        {s.status === "ok" && <div className="mb-3 rounded-lg border border-zinc-800 bg-zinc-900/40 px-3 py-2 text-xs text-zinc-300">{signalHint(s)}</div>}
+        {s.status === "ok" && (
+          <div className="mb-3 rounded-lg border border-zinc-800 bg-zinc-900/40 px-3 py-2">
+            {s.bias && (
+              <div className="mb-1 flex items-center gap-2">
+                <span className={`text-sm font-semibold ${s.bias.score >= 56 ? "text-green-400" : s.bias.score <= 44 ? "text-red-400" : "text-amber-400"}`}>{s.bias.label}</span>
+                {s.bias.text && <span className="text-[11px] text-zinc-500">{s.bias.text}</span>}
+              </div>
+            )}
+            <div className="text-xs text-zinc-300">{signalHint(s)}</div>
+          </div>
+        )}
 
         <TradingViewChart symbol={s.tv} height={260} />
 
@@ -73,6 +83,38 @@ export function DetailContent({ s, onClose, onAnalysis, wide, onToggleWide }: { 
               <span className="text-[11px] uppercase tracking-wide text-zinc-500">vs medias 20/30/150/200</span>
               <div className="flex items-center gap-3"><MAsGlyph s={s} /><span className="nums text-xs text-zinc-400">{dist(s.mas?.ema20)} · {dist(s.mas?.sma30)} · {dist(s.mas?.ema150)} · {dist(s.mas?.ema200)}</span></div>
             </div>
+
+            {s.tesis && (s.tesis.pros.length > 0 || s.tesis.cons.length > 0) && (
+              <>
+                <SectionTitle>Tesis · a favor y en contra</SectionTitle>
+                <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                  <div className="rounded-lg border border-green-500/15 bg-green-500/[0.04] px-3 py-2">
+                    <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-green-400">A favor</div>
+                    {s.tesis.pros.length ? s.tesis.pros.map((p) => <div key={p} className="py-0.5 text-xs text-zinc-300">+ {p}</div>) : <div className="text-xs text-zinc-600">Nada a favor ahora.</div>}
+                  </div>
+                  <div className="rounded-lg border border-red-500/15 bg-red-500/[0.04] px-3 py-2">
+                    <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-red-400">En contra</div>
+                    {s.tesis.cons.length ? s.tesis.cons.map((c) => <div key={c} className="py-0.5 text-xs text-zinc-300">− {c}</div>) : <div className="text-xs text-zinc-600">Nada en contra ahora.</div>}
+                  </div>
+                </div>
+                {s.tesis.invalida && (
+                  <div className="mt-1.5 rounded-md bg-zinc-900/50 px-2.5 py-2 text-xs text-zinc-400">
+                    La lectura se debilita si pierde la <span className="font-medium text-zinc-200">{s.tesis.invalida.ref}</span> en <span className="nums text-zinc-200">{fmtPrice(s.tesis.invalida.nivel)}</span> <span className="nums text-zinc-500">({s.tesis.invalida.pct}%)</span>
+                  </div>
+                )}
+              </>
+            )}
+
+            {s.atr && (
+              <>
+                <SectionTitle>Riesgo</SectionTitle>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <KV k="Volatilidad típica (ATR)" v={`±${s.atr.pct}% / día`} accent={s.atr.pct >= 4 ? "text-red-400" : s.atr.pct >= 2.5 ? "text-amber-400" : "text-zinc-200"} />
+                  <KV k="Stop sugerido (1.5×ATR)" v={fmtPrice(s.atr.stop)} />
+                </div>
+                <div className="mt-1.5 text-[10px] leading-snug text-zinc-600">El stop sugerido es una referencia técnica (precio − 1.5×ATR), no una recomendación. Volatilidad alta = mover posiciones más chicas.</div>
+              </>
+            )}
           </>
         )}
 

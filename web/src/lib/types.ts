@@ -60,6 +60,9 @@ export interface Signal {
   cmf?: number | null;
   money_flow?: "entrada" | "salida" | "neutro" | "N/A";
   bias?: { label: string; score: number; text: string };
+  atr?: { value: number; pct: number; stop: number } | null;
+  tesis?: { pros: string[]; cons: string[]; invalida: { ref: string; nivel: number; pct: number } | null } | null;
+  rs?: { m1: number | null; m3: number | null } | null;
   emas?: {
     e7: number | null; e14: number | null; e21: number | null;
     e42: number | null; e100: number | null; e200: number | null;
@@ -91,7 +94,7 @@ export interface Fng {
 export interface SignalsPayload {
   generated_at: string;
   tz: string;
-  market: { spy_chg: number | null; qqq_chg: number | null };
+  market: { spy_chg: number | null; qqq_chg: number | null; pct_above_ema200?: number | null };
   fng?: Fng;
   count: number;
   items: Signal[];

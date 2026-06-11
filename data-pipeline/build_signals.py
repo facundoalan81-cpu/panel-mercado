@@ -28,9 +28,10 @@ def _resample(df, rule):
 def _norm(sig):
     if sig.get("status") == "sin_datos":
         return {"status": "sin_datos", "bars": sig.get("bars", 0), "score": None, "classification": "SIN_DATOS"}
-    # los marcos no necesitan spark/ohlc (el front usa los del diario) -> aliviana el JSON
+    # los marcos no necesitan spark/ohlc/tesis (el front usa los del diario) -> aliviana el JSON
     sig.pop("spark", None)
     sig.pop("ohlc", None)
+    sig.pop("tesis", None)
     return sig
 
 
@@ -104,6 +105,31 @@ def main():
         item["tf"] = tf
         items.append(item)
 
+    # --- Fuerza relativa vs S&P 500 (1m/3m): ¿lidera o lo arrastra el mercado? ---
+    # Solo activos en USD (los .BA quedan afuera: ARS nominal vs USD no es comparable).
+    def _ret(c, n):
+        try:
+            return float(c.iloc[-1] / c.iloc[-1 - n] - 1) if len(c) > n else None
+        except Exception:
+            return None
+    spy_df = frames.get("SPY")
+    spy_c = spy_df["Close"].dropna() if spy_df is not None else None
+    spy1, spy3 = (_ret(spy_c, 21), _ret(spy_c, 63)) if spy_c is not None else (None, None)
+    by_yf = {it["yf"]: it for it in UNIVERSE}
+    for item in items:
+        u = by_yf.get(item["ticker"]) or next((x for x in UNIVERSE if x["ticker"] == item["ticker"]), None)
+        yf_sym = u["yf"] if u else item["ticker"]
+        if yf_sym.endswith(".BA") or item.get("status") != "ok" or spy1 is None:
+            item["rs"] = None
+            continue
+        c = frames.get(yf_sym)
+        c = c["Close"].dropna() if c is not None else None
+        r1, r3 = (_ret(c, 21), _ret(c, 63)) if c is not None else (None, None)
+        item["rs"] = {
+            "m1": round((r1 - spy1) * 100, 1) if r1 is not None else None,
+            "m3": round((r3 - spy3) * 100, 1) if (r3 is not None and spy3 is not None) else None,
+        }
+
     def chg(sym):
         df = frames.get(sym)
         if df is None or len(df) < 2:
@@ -133,10 +159,15 @@ def main():
     for it in items:
         it.pop("bull_series", None)  # no se guarda por papel (solo alimentó el índice)
 
+    # Amplitud real de mercado: % de acciones sobre su EMA200 (tendencia de fondo del universo)
+    _stk = [i for i in items if i.get("asset_class") == "stock" and i.get("status") == "ok"]
+    _above200 = sum(1 for i in _stk if ((i.get("mas") or {}).get("above") or {}).get("ema200") is True)
+    pct_above_ema200 = round(_above200 / len(_stk) * 100) if _stk else None
+
     out = {
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "tz": "America/Argentina/Buenos_Aires",
-        "market": {"spy_chg": chg("SPY"), "qqq_chg": chg("QQQ")},
+        "market": {"spy_chg": chg("SPY"), "qqq_chg": chg("QQQ"), "pct_above_ema200": pct_above_ema200},
         "fng": fng,
         "count": len(items),
         "items": items,

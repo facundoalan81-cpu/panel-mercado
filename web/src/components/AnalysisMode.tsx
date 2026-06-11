@@ -124,23 +124,30 @@ export function AnalysisMode({
             </div>
           ) : tab === "resumen" ? (
             <>
+              {f.currency === "ARS" && (
+                <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+                  ⚠ Balances en pesos nominales (inflación): los ratios de valuación (P/E, ROE, EV/EBITDA) no son comparables y se ocultan. Las series anuales también están distorsionadas — para valuar este papel, usar su ADR en USD si existe.
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <Kpi label="Retorno anual" value={pctTxt(f.annual_return)} sub="Últimos 12 meses" accent={pctCol(f.annual_return)} />
                 <Kpi label="Gross margin" value={pctTxt(f.gross_margin)} sub="Últimos 12 meses" accent={pctCol(f.gross_margin)} />
                 <Kpi label="FCF margin" value={pctTxt(f.fcf_margin)} sub="Flujo libre / ventas" accent={pctCol(f.fcf_margin)} />
-                <Kpi label="EV / EBITDA" value={f.ev_ebitda != null ? `${f.ev_ebitda.toFixed(1)}x` : "—"} sub="Valuación" />
+                {f.currency !== "ARS" && <Kpi label="EV / EBITDA" value={f.ev_ebitda != null ? `${f.ev_ebitda.toFixed(1)}x` : "—"} sub="Valuación" />}
               </div>
               <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                 <ChartCard title="Ingresos" sub="Anual (miles de M)"><FundChart data={f.revenue} color="#60a5fa" /></ChartCard>
                 <ChartCard title="Free cash flow" sub="Anual (miles de M)"><FundChart data={f.fcf} color="#34d399" /></ChartCard>
                 <ChartCard title="Dilución" sub="Acciones en circulación (M)"><FundChart data={f.shares} color="#f59e0b" /></ChartCard>
               </div>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <Kpi label="P/E" value={f.pe != null ? f.pe.toFixed(1) : "—"} />
-                <Kpi label="P/E fwd" value={f.fwd_pe != null ? f.fwd_pe.toFixed(1) : "—"} />
-                <Kpi label="ROE" value={pctTxt(f.roe)} accent={pctCol(f.roe)} />
-                <Kpi label="Crec. ventas" value={pctTxt(f.rev_growth)} accent={pctCol(f.rev_growth)} />
-              </div>
+              {f.currency !== "ARS" && (
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <Kpi label="P/E" value={f.pe != null ? f.pe.toFixed(1) : "—"} />
+                  <Kpi label="P/E fwd" value={f.fwd_pe != null ? f.fwd_pe.toFixed(1) : "—"} />
+                  <Kpi label="ROE" value={pctTxt(f.roe)} accent={pctCol(f.roe)} />
+                  <Kpi label="Crec. ventas" value={pctTxt(f.rev_growth)} accent={pctCol(f.rev_growth)} />
+                </div>
+              )}
             </>
           ) : (
             <FinancialsTable f={f} />

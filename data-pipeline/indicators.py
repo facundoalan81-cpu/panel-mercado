@@ -334,6 +334,40 @@ def compute_signal(df: pd.DataFrame, min_bars: int = 200, with_history: bool = F
     _btxt = " · ".join(drv[:3])
     bias = {"label": blabel, "score": bscore, "text": (_btxt[:1].upper() + _btxt[1:]) if _btxt else ""}
 
+    # --- ATR(14): volatilidad tipica y stop sugerido (gestion de riesgo) ---
+    atr_v = _last(atr(df, 14))
+    atr_o = None
+    if atr_v is not None and not (isinstance(atr_v, float) and math.isnan(atr_v)) and price:
+        atr_o = {"value": _r(atr_v), "pct": round(atr_v / price * 100, 2),
+                 "stop": _r(price - 1.5 * atr_v)}
+
+    # --- Tesis: que esta a favor, que en contra, y que nivel invalida la lectura ---
+    _tnamed = [
+        ("Sobre la EMA20", "Bajo la EMA20", above["ema20"]),
+        ("Sobre la SMA30", "Bajo la SMA30", above["sma30"]),
+        ("Sobre la EMA150", "Bajo la EMA150", above["ema150"]),
+        ("Sobre la EMA200 (tendencia de fondo)", "Bajo la EMA200 (tendencia de fondo)", above["ema200"]),
+        ("MACD alcista", "MACD bajista", macd_state == "alcista"),
+        ("RSI con fuerza (>=50)", "RSI debil (<50)", rsi_v >= 50),
+        ("Entra volumen (CMF > 0)", "Sale volumen (CMF < 0)", None if cmf_v is None else cmf_v > 0),
+        ("Supertrend al alza", "Supertrend a la baja", st_up),
+        ("WaveTrend al alza", "WaveTrend a la baja", None if wavetrend_o["dir"] is None else wavetrend_o["dir"] == "up"),
+        ("Bollinger comprador", "Bollinger vendedor", None if bbp_o["state"] is None else bbp_o["state"] == "bull"),
+    ]
+    t_pros = [p for p, c, v in _tnamed if v is True]
+    t_cons = [c for p, c, v in _tnamed if v is False]
+    if rsi_v > 75:
+        t_cons.insert(0, "RSI sobrecomprado (>75): riesgo de toma de ganancias")
+    elif rsi_v < 30:
+        t_pros.insert(0, "RSI sobrevendido (<30): posible rebote tecnico")
+    _ma_named = [("EMA20", ema20v), ("SMA30", sma30v), ("EMA150", ema150v), ("EMA200", ema200v)]
+    _below = [(n, v) for n, v in _ma_named if v is not None and v < price]
+    invalida = None
+    if _below:
+        _n, _v = max(_below, key=lambda x: x[1])
+        invalida = {"ref": _n, "nivel": _r(_v), "pct": round((_v / price - 1) * 100, 1)}
+    tesis = {"pros": t_pros[:5], "cons": t_cons[:5], "invalida": invalida}
+
     # --- serie Miedo/Codicia (bull fraction de 5 flags por día) para el índice histórico ---
     bull_series = {}
     if with_history:
@@ -379,6 +413,8 @@ def compute_signal(df: pd.DataFrame, min_bars: int = 200, with_history: bool = F
         "cmf": None if cmf_v is None else round(cmf_v, 4),
         "money_flow": money_flow,
         "bias": bias,
+        "atr": atr_o,
+        "tesis": tesis,
         "emas": emas,
         "supertrend": supertrend_o,
         "wavetrend": wavetrend_o,

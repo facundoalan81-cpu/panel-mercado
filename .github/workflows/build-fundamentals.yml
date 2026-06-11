@@ -1,0 +1,59 @@
+name: build-fundamentals
+
+# Fundamentales (KPIs + estados financieros anuales) de todas las acciones del universo.
+# Cambian lento -> corre SEMANAL, el domingo (mercado cerrado = cero presión extra sobre Yahoo,
+# que es el riesgo operativo #1 del proyecto). Merge incremental: si una corrida falla a mitad,
+# no se pierde lo previo (se siembra con el JSON ya commiteado).
+
+on:
+  schedule:
+    - cron: "0 12 * * 0"   # domingos 12:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-fundamentals
+  cancel-in-progress: false
+
+jobs:
+  fundamentals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Instalar dependencias
+        run: pip install -r data-pipeline/requirements.txt
+
+      - name: Sembrar merge con lo ya publicado
+        run: |
+          mkdir -p data-pipeline/output
+          cp web/public/data/fundamentals-latest.json data-pipeline/output/fundamentals-latest.json 2>/dev/null || true
+
+      - name: Calcular fundamentales (todas las acciones)
+        run: python data-pipeline/build_fundamentals.py
+
+      - name: Publicar JSON al repo (lo lee Vercel)
+        run: |
+          cp data-pipeline/output/fundamentals-latest.json web/public/data/fundamentals-latest.json
+          git config user.name "panel-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add web/public/data/fundamentals-latest.json
+          if git diff --cached --quiet; then
+            echo "Sin cambios."
+          else
+            git commit -m "data: fundamentales $(date -u +%F)"
+            for i in 1 2 3 4 5; do
+              git push && { echo "push ok"; break; }
+              echo "push rechazado (race) -> pull --rebase e intento $i"
+              git pull --rebase --autostash origin main || true
+              sleep 3
+            done
+          fi

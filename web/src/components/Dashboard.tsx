@@ -293,6 +293,9 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
           </div>
         </div>
       </div>
+      {/* HOY EN EL MERCADO (mobile/tablet: el rail lateral no existe ahí) */}
+      <MarketStrip data={data} onSelect={setSelected} />
+
       {/* NAV */}
       <header className="sticky top-0 z-30 border-b border-zinc-800 bg-[#09090b]/95 backdrop-blur">
         <div className="flex items-center gap-3 px-4 py-2.5">
@@ -507,4 +510,58 @@ function Th({ children, sortKey, sort, onSort, right, center, help }: { children
 function MktChip({ label, v }: { label: string; v: number | null }) {
   const up = (v ?? 0) >= 0;
   return <span className="inline-flex items-center gap-1 rounded border border-zinc-800 px-1.5 py-0.5"><span className="text-zinc-500">{label}</span><span className={`nums ${up ? "text-green-400" : "text-red-400"}`}>{v == null ? "—" : fmtPct(v)}</span></span>;
+}
+
+// Tira "Hoy en el mercado" para mobile/tablet (en desktop el rail lateral muestra lo mismo y más).
+function MarketStrip({ data, onSelect }: { data: SignalsPayload; onSelect: (s: Signal) => void }) {
+  const m = useMemo(() => {
+    const ok = data.items.filter((s) => s.status === "ok" && s.asset_class === "stock");
+    const withChg = ok.filter((s) => s.chg_pct != null).sort((a, b) => (b.chg_pct ?? 0) - (a.chg_pct ?? 0));
+    const alcistas = ok.filter((s) => (s.bias?.score ?? 50) >= 56).length;
+    return {
+      up: withChg[0], down: withChg[withChg.length - 1],
+      pctAlcistas: ok.length ? Math.round((alcistas / ok.length) * 100) : null,
+      breadth: data.market.pct_above_ema200 ?? null,
+    };
+  }, [data]);
+  const fng = data.fng?.value;
+  const fngCol = fng == null ? "text-zinc-400" : fng < 45 ? "text-orange-400" : fng <= 55 ? "text-yellow-400" : "text-lime-400";
+  const fngLbl = fng == null ? "" : fng < 25 ? "Miedo extremo" : fng < 45 ? "Miedo" : fng <= 55 ? "Neutral" : fng < 75 ? "Codicia" : "Codicia extrema";
+  return (
+    <div className="flex items-center gap-4 overflow-x-auto border-b border-zinc-800 bg-zinc-900/30 px-4 py-2 text-xs lg:hidden">
+      {fng != null && (
+        <span className="flex shrink-0 items-center gap-1.5">
+          <span className="text-[10px] uppercase tracking-wide text-zinc-600">Ánimo</span>
+          <span className={`nums font-semibold ${fngCol}`}>{fng}</span>
+          <span className={`${fngCol}`}>{fngLbl}</span>
+        </span>
+      )}
+      {m.pctAlcistas != null && (
+        <span className="flex shrink-0 items-center gap-1.5">
+          <span className="text-[10px] uppercase tracking-wide text-zinc-600">Alcistas</span>
+          <span className={`nums font-semibold ${m.pctAlcistas >= 55 ? "text-green-400" : m.pctAlcistas <= 45 ? "text-red-400" : "text-amber-400"}`}>{m.pctAlcistas}%</span>
+        </span>
+      )}
+      {m.breadth != null && (
+        <span className="flex shrink-0 items-center gap-1.5" title="% de acciones sobre su media de 200 ruedas (tendencia de fondo)">
+          <span className="text-[10px] uppercase tracking-wide text-zinc-600">Sobre EMA200</span>
+          <span className={`nums font-semibold ${m.breadth >= 55 ? "text-green-400" : m.breadth <= 45 ? "text-red-400" : "text-amber-400"}`}>{m.breadth}%</span>
+        </span>
+      )}
+      {m.up && (
+        <button onClick={() => onSelect(m.up)} className="flex shrink-0 cursor-pointer items-center gap-1.5">
+          <span className="text-[10px] uppercase tracking-wide text-zinc-600">↑</span>
+          <span className="font-medium text-zinc-200">{m.up.ticker}</span>
+          <span className="nums text-green-400">{fmtPct(m.up.chg_pct)}</span>
+        </button>
+      )}
+      {m.down && (
+        <button onClick={() => onSelect(m.down)} className="flex shrink-0 cursor-pointer items-center gap-1.5">
+          <span className="text-[10px] uppercase tracking-wide text-zinc-600">↓</span>
+          <span className="font-medium text-zinc-200">{m.down.ticker}</span>
+          <span className="nums text-red-400">{fmtPct(m.down.chg_pct)}</span>
+        </button>
+      )}
+    </div>
+  );
 }
