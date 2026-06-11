@@ -367,14 +367,6 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
             ))}
           </div>
           <Tip text="Cambia los indicadores técnicos (RSI, MACD, medias) según el marco temporal. El precio y la variación son siempre los actuales. Para ver el intradía en vivo, abrí el papel: el chart de TradingView del detalle es en tiempo real." className="cursor-help text-zinc-600"><Icon name="help" size={13} /></Tip>
-          <div className="ml-auto flex items-center gap-2">
-            <span className="text-[11px] uppercase tracking-wide text-zinc-600">Ver por</span>
-            <div className="flex items-center rounded-lg border border-zinc-800 p-0.5">
-              {([["pais", "País"], ["sector", "Sector"], ["ambos", "Ambos"], ["lista", "Sin agrupar"]] as const).map(([g, lbl]) => (
-                <button key={g} onClick={() => setGroupBy(g)} className={`cursor-pointer rounded-md px-2.5 py-1 text-xs transition-colors duration-200 ${groupBy === g ? "bg-zinc-200 font-medium text-zinc-900" : "text-zinc-400 hover:text-zinc-200"}`}>{lbl}</button>
-              ))}
-            </div>
-          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
@@ -410,6 +402,14 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
                   <Icon name={k === "A_REVISAR" ? "alert" : "trendUp"} size={12} /> {CLASS_META[k].label}
                 </Toggle>
               ))}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="mr-1 w-12 text-[11px] uppercase tracking-wide text-zinc-600">Agrupar</span>
+              <div className="flex items-center rounded-lg border border-zinc-800 p-0.5">
+                {([["pais", "País"], ["sector", "Sector"], ["ambos", "Ambos"], ["lista", "Sin agrupar"]] as const).map(([g, lbl]) => (
+                  <button key={g} onClick={() => setGroupBy(g)} className={`cursor-pointer rounded-md px-2.5 py-1 text-xs transition-colors duration-200 ${groupBy === g ? "bg-zinc-200 font-medium text-zinc-900" : "text-zinc-400 hover:text-zinc-200"}`}>{lbl}</button>
+                ))}
+              </div>
             </div>
           </>
         )}
