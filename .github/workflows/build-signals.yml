@@ -15,7 +15,12 @@ on:
   workflow_dispatch: {}        # permite correrlo a mano desde la pestaña Actions
 
 permissions:
-  contents: write              # para poder commitear el JSON de vuelta al repo
+  contents: write
+
+# si llega un dispatch mientras corre, se encola (no se pisan)
+concurrency:
+  group: build-signals
+  cancel-in-progress: false
 
 jobs:
   build:

@@ -82,12 +82,7 @@ export function SimpleTable({
                     <div className="nums mt-0.5 text-[11px] text-zinc-500">{fmtPrice(s.price, s.currency)}</div>
                   </td>
                   <td className="px-3 py-2.5"><div className="h-7 w-20">{s.spark?.price ? <LineSpark vals={s.spark.price.slice(-8)} color={up ? "#22c55e" : "#ef4444"} w={80} h={26} /> : null}</div></td>
-                  <td className="px-3 py-2.5">
-                    <div className="flex flex-col gap-1">
-                      <BiasBadge s={s} />
-                      {s.status === "ok" && <span className="text-[11px] text-zinc-500">{s.bias?.text}</span>}
-                    </div>
-                  </td>
+                  <td className="whitespace-nowrap px-3 py-2.5"><BiasBadge s={s} /></td>
                   <td className="px-3 py-2.5 text-right"><RsiCell rsi={s.rsi} /></td>
                   <td className="px-3 py-2.5"><MacdMini s={s} /></td>
                   <td className="px-3 py-2.5">

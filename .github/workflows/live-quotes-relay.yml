@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: write
+  actions: write   # para despachar build-signals desde el loop
 
 concurrency:
   group: live-quotes-b   # grupo PROPIO (no compartido) para no auto-cancelarse con live-quotes
@@ -32,3 +33,4 @@ jobs:
         run: bash data-pipeline/live_loop.sh
         env:
           DATA_DEPLOY_KEY: ${{ secrets.DATA_DEPLOY_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

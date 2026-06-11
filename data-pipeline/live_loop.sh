@@ -29,9 +29,21 @@ CLOSE=$(date -u -d "$(date -u +%Y-%m-%d) 20:05:00" +%s)
 HARD=$(( $(date -u +%s) + 290*60 ))
 END=$CLOSE; [ "$HARD" -lt "$END" ] && END=$HARD
 
+# El cron de GitHub no dispara en este repo (scheduler dormido) -> los INDICADORES también se
+# refrescan desde acá: dispatch de build-signals cada ~55 ciclos (~1 h) mientras el mercado opera.
+# GITHUB_TOKEN sí puede crear workflow_dispatch (es la excepción documentada a la anti-recursión).
+dispatch_signals() {
+  [ -n "${GH_TOKEN:-}" ] || return 0
+  curl -s -o /dev/null -X POST \
+    -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+    "https://api.github.com/repos/facundoalan81-cpu/panel-mercado/actions/workflows/build-signals.yml/dispatches" \
+    -d '{"ref":"main"}' && echo "build-signals despachado ($(date -u +%H:%M))"
+}
+
 n=0
 while [ "$(date -u +%s)" -lt "$END" ]; do
   n=$((n+1))
+  if [ $(( (n - 1) % 55 )) -eq 0 ]; then dispatch_signals; fi
   python "$ROOT/data-pipeline/build_quotes.py" --fast || true
   if [ -f "$ROOT/data-pipeline/output/quotes-fast.json" ]; then
     cp "$ROOT/data-pipeline/output/quotes-fast.json" "$PUB/quotes-fast.json"
