@@ -33,6 +33,15 @@ const TABS: { id: string; label: string; fn: (s: Signal) => boolean }[] = [
   { id: "heatmap", label: "Heatmap", fn: () => true },
 ];
 
+// Presets por perfil: un toque configura marco + vista + agrupado + orden.
+// Es un lanzador, no un candado: después se puede ajustar cualquier cosa a mano.
+const PERFILES = {
+  asesor: { label: "Asesor", view: "simple", tf: "1d", groupBy: "pais", sort: null, help: "Diario, vista simple, agrupado por país. Para mirar rápido y explicar fácil." },
+  trader: { label: "Trader", view: "pro", tf: "4h", groupBy: "lista", sort: { key: "chg", dir: "desc" }, help: "4 horas, vista pro con todos los indicadores, ordenado por % del día." },
+  inversor: { label: "Inversor", view: "simple", tf: "1w", groupBy: "sector", sort: null, help: "Semanal (tendencia de fondo), agrupado por sector. Para posición de largo plazo." },
+} as const;
+type Perfil = keyof typeof PERFILES;
+
 const SORT_VAL: Record<string, (s: Signal) => number> = {
   price: (s) => s.price ?? -Infinity,
   chg: (s) => s.chg_pct ?? -Infinity,
@@ -95,6 +104,8 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
   const [view, setView] = useState<"simple" | "pro">("simple");
   const [tf, setTf] = useState("1d");
   const [sort, setSort] = useState<Sort | null>(null);
+  const [perfil, setPerfil] = useState<Perfil | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
   const [selected, setSelected] = useState<Signal | null>(null);
   const [detailWide, setDetailWide] = useState(false);
   const [clock, setClock] = useState("");
@@ -106,6 +117,19 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
   const [arTs, setArTs] = useState<number | null>(null);
 
   useEffect(() => { const tick = () => setClock(new Date().toLocaleTimeString("es-AR", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" })); tick(); const id = setInterval(tick, 1000); return () => clearInterval(id); }, []);
+
+  const nFilters = countries.size + sectors.size + klass.size;
+
+  const applyPerfil = (p: Perfil) => {
+    const c = PERFILES[p];
+    setPerfil(p); setView(c.view); setTf(c.tf); setGroupBy(c.groupBy); setSort(c.sort ? { ...c.sort } : null);
+    try { localStorage.setItem("pm-perfil", p); } catch {}
+  };
+  // restaurar el perfil elegido la última vez
+  useEffect(() => {
+    try { const p = localStorage.getItem("pm-perfil") as Perfil | null; if (p && PERFILES[p]) applyPerfil(p); } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Carril COMPLETO: branch `data` por raw GitHub (CORS abierto) cada 60s. Cubre los 614 papeles (~5 min).
   useEffect(() => {
@@ -324,6 +348,14 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
       {/* FILTROS */}
       <div className="space-y-2 px-4 py-2.5">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <span className="text-[11px] uppercase tracking-wide text-zinc-600">Perfil</span>
+          <div className="flex items-center rounded-lg border border-violet-500/30 bg-violet-500/[0.06] p-0.5">
+            {(Object.keys(PERFILES) as Perfil[]).map((p) => (
+              <Tip key={p} text={PERFILES[p].help}>
+                <button onClick={() => applyPerfil(p)} className={`cursor-pointer rounded-md px-2.5 py-1 text-xs font-medium transition-colors duration-200 ${perfil === p ? "bg-violet-600 text-white" : "text-violet-200/70 hover:text-white"}`}>{PERFILES[p].label}</button>
+              </Tip>
+            ))}
+          </div>
           <span className="text-[11px] uppercase tracking-wide text-zinc-600">Marco</span>
           <div className="flex items-center rounded-lg border border-zinc-800 p-0.5">
             {([["1h", "1h"], ["4h", "4h"]] as const).map(([v, lbl]) => (
@@ -344,33 +376,43 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
-          <span className="mr-1 w-12 shrink-0 text-[11px] uppercase tracking-wide text-zinc-600">País</span>
-          {presentCountries.map((c) => (
-            <Chip key={c} on={countries.has(c)} onClick={() => setCountries((p) => { const n = new Set(p); if (n.has(c)) n.delete(c); else n.add(c); return n; })}>{COUNTRY_META[c].label}</Chip>
-          ))}
-          {countries.size > 0 && <button onClick={() => setCountries(new Set())} className="shrink-0 cursor-pointer text-[11px] text-zinc-600 hover:text-zinc-300">limpiar</button>}
-        </div>
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
-          <span className="mr-1 w-12 shrink-0 text-[11px] uppercase tracking-wide text-zinc-600">Sector</span>
-          {presentSectors.map((s) => (
-            <Chip key={s} on={sectors.has(s)} onClick={() => setSectors((p) => { const n = new Set(p); if (n.has(s)) n.delete(s); else n.add(s); return n; })}>{s}</Chip>
-          ))}
-          {sectors.size > 0 && <button onClick={() => setSectors(new Set())} className="shrink-0 cursor-pointer text-[11px] text-zinc-600 hover:text-zinc-300">limpiar</button>}
-        </div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
             <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-zinc-600"><Icon name="search" size={13} /></span>
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar…" className="w-36 rounded-md border border-zinc-800 bg-zinc-900/60 py-1 pl-7 pr-2 text-xs outline-none focus:border-zinc-600" />
           </div>
-          {(["FUERTE", "POTENCIAL", "A_REVISAR"] as const).map((k) => (
-            <Toggle key={k} on={klass.has(k)} onClick={() => setKlass((p) => { const n = new Set(p); if (n.has(k)) n.delete(k); else n.add(k); return n; })}>
-              <Icon name={k === "A_REVISAR" ? "alert" : "trendUp"} size={12} /> {CLASS_META[k].label}
-            </Toggle>
-          ))}
+          <Toggle on={showFilters || nFilters > 0} onClick={() => setShowFilters((v) => !v)}>
+            <Icon name="sort" size={12} /> Filtros{nFilters > 0 ? ` (${nFilters})` : ""}
+          </Toggle>
           <Toggle on={onlySignals} onClick={() => setOnlySignals((v) => !v)}>Solo señales</Toggle>
           <Toggle on={onlyFavs} onClick={() => setOnlyFavs((v) => !v)}><Icon name="star" size={12} fill={onlyFavs} /> Mi lista{favs.size > 0 ? ` (${favs.size})` : ""}</Toggle>
         </div>
+        {(showFilters || nFilters > 0) && (
+          <>
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+              <span className="mr-1 w-12 shrink-0 text-[11px] uppercase tracking-wide text-zinc-600">País</span>
+              {presentCountries.map((c) => (
+                <Chip key={c} on={countries.has(c)} onClick={() => setCountries((p) => { const n = new Set(p); if (n.has(c)) n.delete(c); else n.add(c); return n; })}>{COUNTRY_META[c].label}</Chip>
+              ))}
+              {countries.size > 0 && <button onClick={() => setCountries(new Set())} className="shrink-0 cursor-pointer text-[11px] text-zinc-600 hover:text-zinc-300">limpiar</button>}
+            </div>
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+              <span className="mr-1 w-12 shrink-0 text-[11px] uppercase tracking-wide text-zinc-600">Sector</span>
+              {presentSectors.map((s) => (
+                <Chip key={s} on={sectors.has(s)} onClick={() => setSectors((p) => { const n = new Set(p); if (n.has(s)) n.delete(s); else n.add(s); return n; })}>{s}</Chip>
+              ))}
+              {sectors.size > 0 && <button onClick={() => setSectors(new Set())} className="shrink-0 cursor-pointer text-[11px] text-zinc-600 hover:text-zinc-300">limpiar</button>}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="mr-1 w-12 text-[11px] uppercase tracking-wide text-zinc-600">Lectura</span>
+              {(["FUERTE", "POTENCIAL", "A_REVISAR"] as const).map((k) => (
+                <Toggle key={k} on={klass.has(k)} onClick={() => setKlass((p) => { const n = new Set(p); if (n.has(k)) n.delete(k); else n.add(k); return n; })}>
+                  <Icon name={k === "A_REVISAR" ? "alert" : "trendUp"} size={12} /> {CLASS_META[k].label}
+                </Toggle>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {/* CONTENIDO: tabla + rail mercado */}
