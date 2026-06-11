@@ -39,6 +39,7 @@ const SORT_VAL: Record<string, (s: Signal) => number> = {
   score: (s) => s.score ?? -1,
   rsi: (s) => s.rsi ?? -1,
   vol: (s) => s.vol?.value ?? -1,
+  rs: (s) => s.rs?.m3 ?? -Infinity,
 };
 
 function useFavorites() {
@@ -391,7 +392,7 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
             <SimpleTable groups={groups} favs={favs} onToggleFav={toggle} onSelect={setSelected} />
           ) : (
             <div className="overflow-x-auto rounded-lg border border-zinc-800">
-              <table className="w-full min-w-[1480px] text-sm">
+              <table className="w-full min-w-[1560px] text-sm">
                 <thead className="sticky top-0 z-20">
                   <tr className="bg-[#141417] text-left text-[11px] uppercase tracking-wide text-zinc-500 shadow-[0_1px_0_#27272a]">
                     <Th>Papel</Th>
@@ -400,6 +401,7 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
                     <Th sortKey="score" sort={sort} onSort={toggleSort} center help={HELP.score}>Técnico</Th>
                     <Th help={HELP.senal}>Lectura</Th>
                     <Th sortKey="rsi" sort={sort} onSort={toggleSort} right help={HELP.rsi}>RSI</Th>
+                    <Th sortKey="rs" sort={sort} onSort={toggleSort} right help="Fuerza relativa vs S&P 500 (3 meses): positivo = le gana al mercado, negativo = lo arrastra. Solo activos en USD.">FR 3m</Th>
                     <Th help={HELP.avwap}>AVWAP</Th>
                     <Th help={HELP.rsihist}>RSI Hist</Th>
                     <Th help={HELP.macd}>MACD</Th>
@@ -417,7 +419,7 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
                 {groups.map(([gname, rows]) => (
                   <tbody key={gname}>
                     <tr>
-                      <td colSpan={18} className="border-l-2 border-violet-500/60 bg-[#0d0d10] px-3 py-1.5 text-xs font-medium text-zinc-300">{gname} <span className="text-zinc-600">· {rows.length}</span></td>
+                      <td colSpan={19} className="border-l-2 border-violet-500/60 bg-[#0d0d10] px-3 py-1.5 text-xs font-medium text-zinc-300">{gname} <span className="text-zinc-600">· {rows.length}</span></td>
                     </tr>
                     {rows.map((s) => {
                       const up = (s.chg_pct ?? 0) >= 0;
@@ -444,6 +446,7 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
                           <td className="px-3 py-2 text-center"><ScorePips score={s.score} /></td>
                           <td className="px-3 py-2"><div className="flex flex-col gap-0.5"><BiasBadge s={s} /><span className="max-w-[210px] text-[10px] leading-tight text-zinc-600">{s.bias?.text}</span></div></td>
                           <td className="px-3 py-2 text-right"><RsiCell rsi={s.rsi} /></td>
+                          <td className="px-3 py-2 text-right">{s.rs?.m3 != null ? <span className={`nums text-xs ${s.rs.m3 >= 0 ? "text-green-400" : "text-red-400"}`}>{s.rs.m3 > 0 ? "+" : ""}{s.rs.m3}%</span> : <span className="text-xs text-zinc-700">—</span>}</td>
                           <td className="px-3 py-2"><AvwapCell s={s} /></td>
                           <td className="px-3 py-2 text-right"><RsiHistCell v={s.rsi_hist} /></td>
                           <td className="px-3 py-2"><MacdPill s={s} /></td>
