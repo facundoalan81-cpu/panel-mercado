@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import type { Signal } from "@/lib/types";
+import type { Signal, Fundamental } from "@/lib/types";
 import { CLASS_META, COUNTRY_META, fmtPct, fmtPrice, signalHint } from "@/lib/format";
 import { ClassBadge, ScorePips, MAsGlyph } from "./bits";
 import { Logo } from "./Logo";
@@ -22,7 +22,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   return <h3 className="mb-2 mt-5 text-[11px] font-medium uppercase tracking-wider text-zinc-500">{children}</h3>;
 }
 
-export function DetailContent({ s, onClose, onAnalysis, wide, onToggleWide }: { s: Signal; onClose: () => void; onAnalysis: (t: string) => void; wide?: boolean; onToggleWide?: () => void }) {
+export function DetailContent({ s, f, onClose, onAnalysis, wide, onToggleWide }: { s: Signal; f?: Fundamental | null; onClose: () => void; onAnalysis: (t: string) => void; wide?: boolean; onToggleWide?: () => void }) {
   const o = s.ohlc;
   const up = (s.chg_pct ?? 0) >= 0;
   const rangePos = o && o.high != null && o.low != null && s.price != null && o.high !== o.low ? ((s.price - o.low) / (o.high - o.low)) * 100 : null;
@@ -118,6 +118,31 @@ export function DetailContent({ s, onClose, onAnalysis, wide, onToggleWide }: { 
           </>
         )}
 
+        {f && (
+          <>
+            <SectionTitle>La empresa en números</SectionTitle>
+            {f.currency === "ARS" ? (
+              <>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <KV k="Retorno 12 meses" v={f.annual_return != null ? fmtPct(f.annual_return * 100) : "—"} accent={(f.annual_return ?? 0) >= 0 ? "text-green-400" : "text-red-400"} />
+                  <KV k="Margen bruto" v={f.gross_margin != null ? fmtPct(f.gross_margin * 100) : "—"} />
+                </div>
+                <div className="mt-1.5 rounded-md border border-amber-500/20 bg-amber-500/[0.06] px-2.5 py-1.5 text-[10px] leading-snug text-amber-200/80">Balances en pesos nominales (inflación): P/E y ROE no son confiables acá. Para valuar, mirar el ADR en USD.</div>
+              </>
+            ) : (
+              <div className="grid grid-cols-2 gap-1.5">
+                <KV k="Valor de mercado" v={f.market_cap != null ? (f.market_cap >= 1e12 ? `${(f.market_cap / 1e12).toFixed(2)} T` : `${(f.market_cap / 1e9).toFixed(0)} B`) : "—"} />
+                <KV k="P/E (precio/ganancias)" v={f.pe != null ? `${f.pe.toFixed(1)}x` : "—"} accent={f.pe != null ? (f.pe < 18 ? "text-green-400" : f.pe > 35 ? "text-red-400" : "text-zinc-200") : undefined} />
+                <KV k="Crec. de ventas" v={f.rev_growth != null ? fmtPct(f.rev_growth * 100) : "—"} accent={(f.rev_growth ?? 0) > 0.1 ? "text-green-400" : (f.rev_growth ?? 0) < 0 ? "text-red-400" : undefined} />
+                <KV k="ROE (rentabilidad)" v={f.roe != null ? fmtPct(f.roe * 100) : "—"} accent={(f.roe ?? 0) > 0.18 ? "text-green-400" : undefined} />
+                <KV k="Margen neto" v={f.profit_margin != null ? fmtPct(f.profit_margin * 100) : "—"} accent={(f.profit_margin ?? 0) > 0.15 ? "text-green-400" : (f.profit_margin ?? 0) < 0 ? "text-red-400" : undefined} />
+                <KV k="Retorno 12 meses" v={f.annual_return != null ? fmtPct(f.annual_return * 100) : "—"} accent={(f.annual_return ?? 0) >= 0 ? "text-green-400" : "text-red-400"} />
+              </div>
+            )}
+            <button onClick={() => onAnalysis(s.ticker)} className="mt-1.5 w-full cursor-pointer rounded-md border border-zinc-800 py-1.5 text-center text-xs text-zinc-400 transition-colors hover:border-zinc-600 hover:text-zinc-200">Ver análisis completo: ingresos, flujo de caja, historial →</button>
+          </>
+        )}
+
         <SectionTitle>Confluencia técnica</SectionTitle>
         <div className="overflow-hidden rounded-lg border border-zinc-800"><TradingViewTechnicals symbol={s.tv} height={380} /></div>
 
@@ -148,7 +173,7 @@ export function DetailContent({ s, onClose, onAnalysis, wide, onToggleWide }: { 
 }
 
 /** Overlay para pantallas chicas (en desktop el detalle va en panel fijo). */
-export function DetailDrawer({ s, onClose, onAnalysis }: { s: Signal | null; onClose: () => void; onAnalysis: (t: string) => void }) {
+export function DetailDrawer({ s, f, onClose, onAnalysis }: { s: Signal | null; f?: Fundamental | null; onClose: () => void; onAnalysis: (t: string) => void }) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
     if (s) window.addEventListener("keydown", onKey);
@@ -158,7 +183,7 @@ export function DetailDrawer({ s, onClose, onAnalysis }: { s: Signal | null; onC
   return (
     <div className="fixed inset-0 z-50 lg:hidden">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <aside className="absolute right-0 top-0 h-full w-full max-w-[480px] border-l border-zinc-800 shadow-2xl"><DetailContent s={s} onClose={onClose} onAnalysis={onAnalysis} /></aside>
+      <aside className="absolute right-0 top-0 h-full w-full max-w-[480px] border-l border-zinc-800 shadow-2xl"><DetailContent s={s} f={f} onClose={onClose} onAnalysis={onAnalysis} /></aside>
     </div>
   );
 }

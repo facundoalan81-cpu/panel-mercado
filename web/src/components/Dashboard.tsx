@@ -33,15 +33,6 @@ const TABS: { id: string; label: string; fn: (s: Signal) => boolean }[] = [
   { id: "heatmap", label: "Heatmap", fn: () => true },
 ];
 
-// Presets por perfil: un toque configura marco + vista + agrupado + orden.
-// Es un lanzador, no un candado: después se puede ajustar cualquier cosa a mano.
-const PERFILES = {
-  asesor: { label: "Asesor", view: "simple", tf: "1d", groupBy: "pais", sort: null, help: "Diario, vista simple, agrupado por país. Para mirar rápido y explicar fácil." },
-  trader: { label: "Trader", view: "pro", tf: "4h", groupBy: "lista", sort: { key: "chg", dir: "desc" }, help: "4 horas, vista pro con todos los indicadores, ordenado por % del día." },
-  inversor: { label: "Inversor", view: "simple", tf: "1w", groupBy: "sector", sort: null, help: "Semanal (tendencia de fondo), agrupado por sector. Para posición de largo plazo." },
-} as const;
-type Perfil = keyof typeof PERFILES;
-
 const SORT_VAL: Record<string, (s: Signal) => number> = {
   price: (s) => s.price ?? -Infinity,
   chg: (s) => s.chg_pct ?? -Infinity,
@@ -104,7 +95,6 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
   const [view, setView] = useState<"simple" | "pro">("simple");
   const [tf, setTf] = useState("1d");
   const [sort, setSort] = useState<Sort | null>(null);
-  const [perfil, setPerfil] = useState<Perfil | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [selected, setSelected] = useState<Signal | null>(null);
   const [detailWide, setDetailWide] = useState(false);
@@ -120,14 +110,17 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
 
   const nFilters = countries.size + sectors.size + klass.size;
 
-  const applyPerfil = (p: Perfil) => {
-    const c = PERFILES[p];
-    setPerfil(p); setView(c.view); setTf(c.tf); setGroupBy(c.groupBy); setSort(c.sort ? { ...c.sort } : null);
-    try { localStorage.setItem("pm-perfil", p); } catch {}
+  // Simple = mirar y entender rápido (diario, agrupado por país, fundamentales a mano en el detalle).
+  // Pro = modo trader (4 horas, todas las columnas, ordenado por el movimiento del día).
+  const applyView = (v: "simple" | "pro") => {
+    setView(v);
+    if (v === "pro") { setTf("4h"); setGroupBy("lista"); setSort({ key: "chg", dir: "desc" }); }
+    else { setTf("1d"); setGroupBy("pais"); setSort(null); }
+    try { localStorage.setItem("pm-view", v); } catch {}
   };
-  // restaurar el perfil elegido la última vez
+  // restaurar la vista elegida la última vez
   useEffect(() => {
-    try { const p = localStorage.getItem("pm-perfil") as Perfil | null; if (p && PERFILES[p]) applyPerfil(p); } catch {}
+    try { const v = localStorage.getItem("pm-view"); if (v === "pro" || v === "simple") applyView(v); } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -334,7 +327,7 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
               <span className="hidden text-[10px] font-medium uppercase tracking-wide text-zinc-500 md:inline">Vista</span>
               <div className="flex items-center rounded-lg border border-violet-500/40 bg-violet-500/10 p-0.5 shadow-sm shadow-violet-900/20">
                 {([["simple", "Simple"], ["pro", "Pro"]] as const).map(([v, lbl]) => (
-                  <button key={v} onClick={() => setView(v)} className={`cursor-pointer rounded-md px-3 py-1.5 text-xs font-semibold transition-colors duration-200 ${view === v ? "bg-violet-600 text-white shadow" : "text-violet-200/70 hover:text-white"}`}>{lbl}</button>
+                  <button key={v} onClick={() => applyView(v)} className={`cursor-pointer rounded-md px-3 py-1.5 text-xs font-semibold transition-colors duration-200 ${view === v ? "bg-violet-600 text-white shadow" : "text-violet-200/70 hover:text-white"}`}>{lbl}</button>
                 ))}
               </div>
             </div>
@@ -348,14 +341,6 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
       {/* FILTROS */}
       <div className="space-y-2 px-4 py-2.5">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <span className="text-[11px] uppercase tracking-wide text-zinc-600">Perfil</span>
-          <div className="flex items-center rounded-lg border border-violet-500/30 bg-violet-500/[0.06] p-0.5">
-            {(Object.keys(PERFILES) as Perfil[]).map((p) => (
-              <Tip key={p} text={PERFILES[p].help}>
-                <button onClick={() => applyPerfil(p)} className={`cursor-pointer rounded-md px-2.5 py-1 text-xs font-medium transition-colors duration-200 ${perfil === p ? "bg-violet-600 text-white" : "text-violet-200/70 hover:text-white"}`}>{PERFILES[p].label}</button>
-              </Tip>
-            ))}
-          </div>
           <span className="text-[11px] uppercase tracking-wide text-zinc-600">Marco</span>
           <div className="flex items-center rounded-lg border border-zinc-800 p-0.5">
             {([["1h", "1h"], ["4h", "4h"]] as const).map(([v, lbl]) => (
@@ -522,7 +507,7 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
         <aside className={`hidden shrink-0 transition-[width] duration-200 lg:block ${detailWide ? "w-[620px]" : "w-[360px]"}`}>
           <div className="sticky top-[60px] max-h-[calc(100vh-72px)] overflow-hidden rounded-xl border border-zinc-800">
             {selected ? (
-              <div className="h-[calc(100vh-72px)]"><DetailContent s={selected} onClose={() => setSelected(null)} onAnalysis={(t) => { setSelected(null); setAnalysis(t); }} wide={detailWide} onToggleWide={() => setDetailWide((v) => !v)} /></div>
+              <div className="h-[calc(100vh-72px)]"><DetailContent s={selected} f={funds[selected.ticker] ?? null} onClose={() => setSelected(null)} onAnalysis={(t) => { setSelected(null); setAnalysis(t); }} wide={detailWide} onToggleWide={() => setDetailWide((v) => !v)} /></div>
             ) : (
               <div className="max-h-[calc(100vh-72px)] overflow-y-auto p-3"><MarketPanel items={filtered} fng={data.fng} onSelect={setSelected} /></div>
             )}
@@ -530,7 +515,7 @@ export default function Dashboard({ data, funds }: { data: SignalsPayload; funds
         </aside>
       </div>
 
-      <DetailDrawer s={selected} onClose={() => setSelected(null)} onAnalysis={(t) => { setSelected(null); setAnalysis(t); }} />
+      <DetailDrawer s={selected} f={selected ? funds[selected.ticker] ?? null : null} onClose={() => setSelected(null)} onAnalysis={(t) => { setSelected(null); setAnalysis(t); }} />
       {analysis && byTicker.get(analysis) && (
         <AnalysisMode s={byTicker.get(analysis)!} f={funds[analysis] ?? null} all={viewItems} funds={funds} onSelect={(t) => setAnalysis(t)} onClose={() => setAnalysis(null)} />
       )}
