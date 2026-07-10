@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { track } from "@vercel/analytics";
 import type { Signal, Fundamental } from "@/lib/types";
 import { CLASS_META, COUNTRY_META, fmtPct, fmtPrice, signalHint, copyReading, earningsInfo } from "@/lib/format";
 import { ClassBadge, ScorePips, MAsGlyph } from "./bits";
@@ -27,7 +28,7 @@ export function DetailContent({ s, f, resumen, onClose, onAnalysis, wide, onTogg
   const up = (s.chg_pct ?? 0) >= 0;
   const [copied, setCopied] = useState(false);
   const copy = async () => {
-    try { await navigator.clipboard.writeText(copyReading(s)); setCopied(true); setTimeout(() => setCopied(false), 1800); } catch {}
+    try { await navigator.clipboard.writeText(copyReading(s)); setCopied(true); track("copiar_lectura", { ticker: s.ticker }); setTimeout(() => setCopied(false), 1800); } catch {}
   };
   const rangePos = o && o.high != null && o.low != null && s.price != null && o.high !== o.low ? ((s.price - o.low) / (o.high - o.low)) * 100 : null;
   const vsOpen = o && o.open != null && s.price != null ? (s.price / o.open - 1) * 100 : null;
