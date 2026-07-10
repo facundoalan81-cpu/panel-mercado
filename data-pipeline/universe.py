@@ -36,6 +36,10 @@ _US = [
     ("AAL", "AAL", "American Airlines", "Industriales"), ("RIVN", "RIVN", "Rivian", "Consumo Discrecional"),
     ("LCID", "LCID", "Lucid Motors", "Consumo Discrecional"), ("SOFI", "SOFI", "SoFi", "Financiero"),
     ("HOOD", "HOOD", "Robinhood", "Financiero"), ("RBLX", "RBLX", "Roblox", "Comunicaciones"),
+    # altas por demanda real del grupo (símbolos Yahoo verificados 2026-07-10)
+    ("ASTS", "ASTS", "AST SpaceMobile", "Tecnología"), ("IREN", "IREN", "IREN", "Tecnología"),
+    ("LAC", "LAC", "Lithium Americas", "Materiales"), ("SATL", "SATL", "Satellogic", "Industriales"),
+    ("KEEL", "KEEL", "Keel Infrastructure", "Tecnología"),
 ]
 
 # --- ADRs argentinos (USD) ---
@@ -70,6 +74,9 @@ _MACRO = [
     _mk("NATGAS", "NG=F", "Gas Natural", "GLOBAL", "Commodities", "commodity", tv="NYMEX:NG1!"),
     _mk("BTCUSD", "BTC-USD", "Bitcoin", "GLOBAL", "Cripto", "crypto", tv="BTCUSD"),
     _mk("ETHUSD", "ETH-USD", "Ethereum", "GLOBAL", "Cripto", "crypto", tv="ETHUSD"),
+    # ETFs sectoriales por demanda del grupo (símbolos Yahoo verificados 2026-07-10)
+    _mk("ITA", "ITA", "Aeroespacial y Defensa (ETF)", "GLOBAL", "Índices", "index"),
+    _mk("XLV", "XLV", "Salud (ETF)", "GLOBAL", "Índices", "index"),
 ]
 
 # --- Brasil (ADRs en US) ---
