@@ -284,6 +284,19 @@ export default function Dashboard({ data }: { data: SignalsPayload }) {
 
   const toggleSort = (key: string) => setSort((p) => (p?.key === key ? (p.dir === "desc" ? { key, dir: "asc" } : null) : { key, dir: "desc" }));
 
+  // "Mis papeles hoy": resumen de los favoritos con datos ya en el payload.
+  const favSummary = useMemo(() => {
+    if (!favs.size) return null;
+    const mine = viewItems.filter((s) => favs.has(s.ticker));
+    if (!mine.length) return null;
+    const enCompra = mine.filter((s) => s.classification === "FUERTE" || s.classification === "POTENCIAL").length;
+    const sobre = mine.filter((s) => s.classification === "A_REVISAR").length;
+    const cerca = mine
+      .filter((s) => s.classification === "POTENCIAL" && s.missing?.pct_para_romper != null)
+      .sort((a, b) => (a.missing!.pct_para_romper! - b.missing!.pct_para_romper!))[0];
+    return { enCompra, sobre, cerca };
+  }, [viewItems, favs]);
+
   return (
     <div className="min-h-full">
       {/* BANNER de marca */}
@@ -414,6 +427,13 @@ export default function Dashboard({ data }: { data: SignalsPayload }) {
       {/* CONTENIDO: tabla + rail mercado */}
       <div className="flex gap-4 px-4 pb-20">
         <main className="min-w-0 flex-1">
+          {favSummary && tab !== "heatmap" && (
+            <div className="mb-3 flex flex-wrap items-center gap-x-2.5 gap-y-1 rounded-lg border border-amber-500/20 bg-amber-500/[0.04] px-3 py-2 text-xs">
+              <span className="inline-flex items-center gap-1 font-medium text-amber-300"><Icon name="star" size={12} fill /> Tus papeles</span>
+              <span className="text-zinc-300">{favSummary.enCompra} en compra{favSummary.sobre > 0 ? ` · ${favSummary.sobre} sobrecomprado${favSummary.sobre === 1 ? "" : "s"}` : ""}</span>
+              {favSummary.cerca && <span className="text-zinc-500">— {favSummary.cerca.ticker} a {favSummary.cerca.missing!.pct_para_romper}% de romper la última media</span>}
+            </div>
+          )}
           {tab === "heatmap" ? (
             <Heatmap items={filtered} onSelect={setSelected} />
           ) : filtered.length === 0 ? (
