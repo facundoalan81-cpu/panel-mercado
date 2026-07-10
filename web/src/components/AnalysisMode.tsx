@@ -2,10 +2,10 @@
 
 import { useMemo, useState } from "react";
 import type { Signal, Fundamental, Fundamentals } from "@/lib/types";
-import { fmtPrice, fmtPct, sectorMedians, vsSector, earningsInfo, fmtEsNum, ADR_PAIRS } from "@/lib/format";
+import { fmtPrice, fmtPct, sectorMedians, vsSector, earningsInfo, fmtEsNum, fundVerdict, ADR_PAIRS } from "@/lib/format";
 import { ClassBadge } from "./bits";
 import { Logo } from "./Logo";
-import { FundChart } from "./FundChart";
+import { FundChart, FundBars } from "./FundChart";
 
 function marketCap(n: number | null): string {
   if (!n) return "—";
@@ -166,6 +166,24 @@ export function AnalysisMode({
                   )}
                 </div>
               )}
+              {/* VEREDICTO FUNDAMENTAL — la historia del papel en una frase */}
+              {(() => {
+                const v = fundVerdict(f, med, s.price);
+                if (!v) return null;
+                return (
+                  <div className="relative overflow-hidden rounded-2xl border border-violet-500/25 bg-gradient-to-br from-violet-500/[0.09] via-zinc-900/50 to-zinc-900/40 p-5">
+                    <div className="pointer-events-none absolute -right-16 -top-20 h-44 w-44 rounded-full bg-violet-600/20 blur-3xl" />
+                    <div className="pointer-events-none absolute -bottom-24 -left-10 h-40 w-40 rounded-full bg-fuchsia-600/10 blur-3xl" />
+                    <div className="relative">
+                      <div className="mb-2.5 flex flex-wrap items-center gap-2.5">
+                        <span className="text-[10px] font-medium uppercase tracking-[0.15em] text-violet-300/70">Veredicto fundamental</span>
+                        <span className={`inline-flex items-center rounded-full border px-3 py-1 text-[13px] font-semibold ${v.chipCls}`}>{v.chip}</span>
+                      </div>
+                      <p className="max-w-2xl text-[15px] leading-relaxed text-zinc-100">{v.text}</p>
+                    </div>
+                  </div>
+                );
+              })()}
               {/* Fila de contexto: balance, dividendo, beta */}
               {(() => {
                 const e = earningsInfo(f.earnings_ts);
@@ -213,13 +231,22 @@ export function AnalysisMode({
                   </div>
                 );
               })()}
-              {/* Charts: anual + trimestral + FCF + dilución */}
+              {/* Charts: ingresos, ganancia, EPS, FCF, dividendo, dilución */}
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <ChartCard title="Ingresos" sub="Anual (miles de M)"><FundChart data={f.revenue} color="#60a5fa" /></ChartCard>
+                <ChartCard title="Ingresos" sub="Anual (miles de M)"><FundBars data={f.revenue} color="#60a5fa" /></ChartCard>
                 {f.rev_q && Object.keys(f.rev_q).length >= 2 && (
-                  <ChartCard title="Ingresos" sub="Trimestral — muestra la aceleración (miles de M)"><FundChart data={f.rev_q} color="#818cf8" /></ChartCard>
+                  <ChartCard title="Ingresos" sub="Trimestral — la aceleración (miles de M)"><FundBars data={f.rev_q} color="#818cf8" /></ChartCard>
                 )}
-                <ChartCard title="Free cash flow" sub="Anual (miles de M)"><FundChart data={f.fcf} color="#34d399" /></ChartCard>
+                {f.net_income && Object.keys(f.net_income).length >= 2 && (
+                  <ChartCard title="Ganancia neta" sub="Anual (miles de M) — verde gana, rojo pierde"><FundBars data={f.net_income} color="#34d399" diverge /></ChartCard>
+                )}
+                {f.eps_q && Object.keys(f.eps_q).length >= 2 && (
+                  <ChartCard title="Ganancia por acción (EPS)" sub="Trimestral ($ por acción)"><FundBars data={f.eps_q} color="#a78bfa" /></ChartCard>
+                )}
+                <ChartCard title="Free cash flow" sub="Anual (miles de M)"><FundBars data={f.fcf} color="#2dd4bf" diverge /></ChartCard>
+                {f.div_hist && Object.values(f.div_hist).some((v) => v > 0) && (
+                  <ChartCard title="Dividendo por acción" sub="Anual ($ por acción)"><FundBars data={f.div_hist} color="#fbbf24" /></ChartCard>
+                )}
                 <ChartCard title="Dilución" sub="Acciones en circulación (M)"><FundChart data={f.shares} color="#f59e0b" /></ChartCard>
               </div>
             </>
@@ -269,18 +296,18 @@ export function AnalysisMode({
 }
 
 function FinancialsTable({ f }: { f: Fundamental }) {
-  const years = Array.from(new Set([...Object.keys(f.revenue), ...Object.keys(f.fcf), ...Object.keys(f.shares)]))
+  const years = Array.from(new Set([...Object.keys(f.revenue), ...Object.keys(f.fcf), ...Object.keys(f.shares), ...Object.keys(f.net_income ?? {}), ...Object.keys(f.div_hist ?? {})]))
     .map(Number).sort((a, b) => a - b);
-  const cell = (rec: Record<string, number>, y: number) =>
-    rec[String(y)] != null ? fmtEsNum(rec[String(y)]) : "—";
+  const cell = (rec: Record<string, number> | undefined, y: number | string, dec = 1) =>
+    rec?.[String(y)] != null ? fmtEsNum(rec[String(y)], dec) : "—";
+  const hasDiv = f.div_hist && Object.values(f.div_hist).some((v) => v > 0);
   // Margen FCF por año (no tenemos ingreso neto por año -> flujo libre / ventas, honesto).
   const marginCell = (y: number) => {
     const r = f.revenue[String(y)]; const c = f.fcf[String(y)];
     return r && c != null ? `${fmtEsNum((c / r) * 100, 0)}%` : "—";
   };
-  const qKeys = f.rev_q
-    ? Object.keys(f.rev_q).sort((a, b) => (Number(a.slice(0, 4)) * 4 + Number(a.slice(5))) - (Number(b.slice(0, 4)) * 4 + Number(b.slice(5))))
-    : [];
+  const qKeys = Array.from(new Set([...Object.keys(f.rev_q ?? {}), ...Object.keys(f.eps_q ?? {})]))
+    .sort((a, b) => (Number(a.slice(0, 4)) * 4 + Number(a.slice(5))) - (Number(b.slice(0, 4)) * 4 + Number(b.slice(5))));
   return (
     <div className="space-y-4">
       <div className="overflow-x-auto rounded-xl border border-zinc-800">
@@ -293,9 +320,15 @@ function FinancialsTable({ f }: { f: Fundamental }) {
           </thead>
           <tbody className="nums">
             <tr className="border-t border-zinc-800/60"><td className="px-3 py-2 text-zinc-400">Ingresos (B)</td>{years.map((y) => <td key={y} className="px-3 py-2 text-right">{cell(f.revenue, y)}</td>)}</tr>
-            <tr className="border-t border-zinc-800/60"><td className="px-3 py-2 text-zinc-400">Free cash flow (B)</td>{years.map((y) => <td key={y} className="px-3 py-2 text-right">{cell(f.fcf, y)}</td>)}</tr>
+            {f.net_income && Object.keys(f.net_income).length > 0 && (
+              <tr className="border-t border-zinc-800/60"><td className="px-3 py-2 text-zinc-400">Ganancia neta (B)</td>{years.map((y) => <td key={y} className={`px-3 py-2 text-right ${(f.net_income![String(y)] ?? 0) < 0 ? "text-red-400" : ""}`}>{cell(f.net_income, y)}</td>)}</tr>
+            )}
+            <tr className="border-t border-zinc-800/60"><td className="px-3 py-2 text-zinc-400">Free cash flow (B)</td>{years.map((y) => <td key={y} className={`px-3 py-2 text-right ${(f.fcf[String(y)] ?? 0) < 0 ? "text-red-400" : ""}`}>{cell(f.fcf, y)}</td>)}</tr>
             <tr className="border-t border-zinc-800/60"><td className="px-3 py-2 text-zinc-400">Margen FCF</td>{years.map((y) => <td key={y} className="px-3 py-2 text-right">{marginCell(y)}</td>)}</tr>
             <tr className="border-t border-zinc-800/60"><td className="px-3 py-2 text-zinc-400">Acciones (M)</td>{years.map((y) => <td key={y} className="px-3 py-2 text-right">{cell(f.shares, y)}</td>)}</tr>
+            {hasDiv && (
+              <tr className="border-t border-zinc-800/60"><td className="px-3 py-2 text-zinc-400">Dividendo/acción</td>{years.map((y) => <td key={y} className="px-3 py-2 text-right">{cell(f.div_hist, y, 2)}</td>)}</tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -311,7 +344,10 @@ function FinancialsTable({ f }: { f: Fundamental }) {
                 </tr>
               </thead>
               <tbody className="nums">
-                <tr className="border-t border-zinc-800/60"><td className="px-3 py-2 text-zinc-400">Ingresos (B)</td>{qKeys.map((k) => <td key={k} className="px-3 py-2 text-right">{fmtEsNum(f.rev_q![k])}</td>)}</tr>
+                <tr className="border-t border-zinc-800/60"><td className="px-3 py-2 text-zinc-400">Ingresos (B)</td>{qKeys.map((k) => <td key={k} className="px-3 py-2 text-right">{cell(f.rev_q, k)}</td>)}</tr>
+                {f.eps_q && Object.keys(f.eps_q).length > 0 && (
+                  <tr className="border-t border-zinc-800/60"><td className="px-3 py-2 text-zinc-400">EPS ($)</td>{qKeys.map((k) => <td key={k} className={`px-3 py-2 text-right ${(f.eps_q![k] ?? 0) < 0 ? "text-red-400" : ""}`}>{cell(f.eps_q, k, 2)}</td>)}</tr>
+                )}
               </tbody>
             </table>
           </div>

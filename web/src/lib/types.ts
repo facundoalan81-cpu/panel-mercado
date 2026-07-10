@@ -136,6 +136,9 @@ export interface Fundamental {
   total_debt?: number | null;
   earnings_ts?: string | null;      // ISO del próximo balance
   rev_q?: Record<string, number>;   // {YYYYQn: B} últimos 8 trimestres
+  eps_q?: Record<string, number>;   // {YYYYQn: $/acción}
+  net_income?: Record<string, number>; // {year: B} ganancia neta
+  div_hist?: Record<string, number>;   // {year: $/acción pagado}
 }
 
 export type Fundamentals = Record<string, Fundamental>;

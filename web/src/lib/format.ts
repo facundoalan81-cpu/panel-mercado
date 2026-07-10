@@ -1,4 +1,4 @@
-import type { Classification, Country, Signal, Fundamentals, SectorMedians, FundMeta } from "./types";
+import type { Classification, Country, Signal, Fundamental, Fundamentals, SectorMedians, SectorMedian, FundMeta } from "./types";
 
 export const CLASS_META: Record<
   Classification,
@@ -123,6 +123,48 @@ export function earningsInfo(iso?: string | null): { date: string; days: number;
   const days = Math.ceil((d.getTime() - Date.now()) / 86400000);
   const date = d.toLocaleDateString("es-AR", { day: "2-digit", month: "short", timeZone: "UTC" });
   return { date, days, soon: days >= 0 && days <= 7 };
+}
+
+// Veredicto FUNDAMENTAL: la historia del papel en una frase, armada con datos ya presentes
+// (crecimiento y P/E vs mediana del sector + rentabilidad + próximo balance). Sin IA, costo cero.
+export function fundVerdict(f: Fundamental, med: SectorMedian | undefined, _price?: number | null): { chip: string; chipCls: string; text: string } | null {
+  if (f.currency === "ARS") return null; // valuación ARS distorsionada por inflación
+  const g = f.rev_growth, pe = f.pe, pm = f.profit_margin;
+  const gs = med?.rev_growth, ps = med?.pe;
+  const growsFast = g != null && gs != null ? g > gs * 1.2 : (g ?? 0) > 0.15;
+  const shrinks = g != null && g < 0;
+  const expensive = pe != null && ps != null ? pe > ps * 1.2 : false;
+  const cheapish = pe != null && ps != null ? pe < ps * 0.8 : false;
+  const noProfit = pm != null && pm < 0;
+
+  const parts: string[] = [];
+  if (g != null) {
+    const gTxt = `${g >= 0 ? "+" : ""}${(g * 100).toFixed(0)}%`;
+    parts.push(shrinks ? `Las ventas caen (${gTxt})` : `Crece al ${gTxt}${gs != null ? ` (sector: ${(gs * 100).toFixed(0)}%)` : ""}`);
+  }
+  if (noProfit) parts.push("todavía no gana plata");
+  else if (pm != null && med?.profit_margin != null && pm > med.profit_margin * 1.2) parts.push("con márgenes mejores que el sector");
+  if (pe != null) {
+    if (expensive) parts.push(`se paga cara (P/E ${pe.toFixed(0)}x vs ${ps!.toFixed(0)}x del sector)`);
+    else if (cheapish) parts.push(`cotiza barata (P/E ${pe.toFixed(0)}x vs ${ps!.toFixed(0)}x del sector)`);
+    else if (ps != null) parts.push(`valuación en línea con el sector (P/E ${pe.toFixed(0)}x)`);
+  } else if (noProfit === false && pm == null) {
+    /* sin datos de rentabilidad: no opinar */
+  }
+  const e = earningsInfo(f.earnings_ts);
+  if (e && e.days >= 0 && e.days <= 30) parts.push(`presenta balance en ${e.days === 0 ? "estos días" : `${e.days} días`}`);
+  if (!parts.length) return null;
+
+  let chip = "Números en línea", chipCls = "bg-zinc-500/15 text-zinc-300 border-zinc-600/40";
+  if (noProfit) { chip = "Aún no es rentable"; chipCls = "bg-amber-500/15 text-amber-300 border-amber-500/40"; }
+  else if (growsFast && expensive) { chip = "Crece fuerte, se paga cara"; chipCls = "bg-violet-500/15 text-violet-300 border-violet-500/40"; }
+  else if (growsFast && !expensive) { chip = "Crece y está a buen precio"; chipCls = "bg-green-500/15 text-green-400 border-green-500/40"; }
+  else if (shrinks && expensive) { chip = "Cara y sin crecimiento"; chipCls = "bg-red-500/15 text-red-400 border-red-500/40"; }
+  else if (shrinks) { chip = "Ventas en retroceso"; chipCls = "bg-amber-500/15 text-amber-300 border-amber-500/40"; }
+  else if (cheapish) { chip = "Valuación atractiva"; chipCls = "bg-green-500/15 text-green-400 border-green-500/40"; }
+
+  const text = parts.join(", ").replace(/^./, (c) => c.toUpperCase()) + ".";
+  return { chip, chipCls, text };
 }
 
 // Pares BCBA (ARS) ↔ ADR/sibling en USD: para papeles ARS con valuación distorsionada por inflación,
