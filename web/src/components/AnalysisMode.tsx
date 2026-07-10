@@ -83,16 +83,28 @@ export function AnalysisMode({
     return isNaN(d.getTime()) ? null : d.toLocaleDateString("es-AR", { day: "2-digit", month: "long", year: "numeric" });
   }, [funds]);
 
-  // Pares del MISMO sector (no papeles random). Orden estable: primero los que tienen
-  // fundamentals, después alfabético -> no se reordena por % al tocar uno.
-  const rail = useMemo(
-    () =>
-      all
-        .filter((x) => x.ticker !== s.ticker && x.asset_class === "stock" && x.sector === s.sector)
-        .sort((a, b) => (Number(!!funds[b.ticker]) - Number(!!funds[a.ticker])) || a.ticker.localeCompare(b.ticker))
-        .slice(0, 24),
-    [all, funds, s.ticker, s.sector],
-  );
+  // Pares del MISMO sector, ordenados por relevancia: primero misma industria,
+  // después resto del sector; dentro de cada grupo por market cap desc. Limita a 12.
+  const rail = useMemo(() => {
+    const myInd = f?.industry ?? null;
+    const cap = (t: string) => funds[t]?.market_cap ?? 0;
+    return all
+      .filter((x) => x.ticker !== s.ticker && x.asset_class === "stock" && x.sector === s.sector)
+      .sort((a, b) => {
+        const sa = myInd && funds[a.ticker]?.industry === myInd ? 0 : 1;
+        const sb = myInd && funds[b.ticker]?.industry === myInd ? 0 : 1;
+        return sa - sb || cap(b.ticker) - cap(a.ticker) || a.ticker.localeCompare(b.ticker);
+      })
+      .slice(0, 12);
+  }, [all, funds, s.ticker, s.sector, f?.industry]);
+
+  // Mediana de P/E de los similares listados (solo si hay ≥3 con dato).
+  const railPeMed = useMemo(() => {
+    const pes = rail.map((x) => funds[x.ticker]?.pe).filter((v): v is number => v != null && v > 0).sort((a, b) => a - b);
+    if (pes.length < 3) return null;
+    const m = pes.length >> 1;
+    return pes.length % 2 ? pes[m] : (pes[m - 1] + pes[m]) / 2;
+  }, [rail, funds]);
 
   return (
     <div className="fixed inset-0 z-[60] overflow-y-auto bg-[#09090b]">
@@ -262,32 +274,40 @@ export function AnalysisMode({
         {/* RAIL */}
         <aside className="w-full shrink-0 lg:w-[330px]">
           <div className="sticky top-6 flex flex-col rounded-2xl border border-zinc-800 bg-zinc-900/30">
-            <div className="flex items-center justify-between border-b border-zinc-800 px-4 py-3">
-              <div>
+            <div className="flex items-start justify-between gap-2 border-b border-zinc-800 px-4 py-3">
+              <div className="min-w-0">
                 <div className="text-sm font-semibold">Similares</div>
                 <div className="text-[11px] text-zinc-600">Mismo sector · {s.sector}</div>
+                {f?.currency !== "ARS" && railPeMed != null && (
+                  <div className="mt-1 text-[11px] text-zinc-500">
+                    P/E del papel {f?.pe != null ? `${fmtEsNum(f.pe, 0)}x` : "—"} · mediana de estos: {fmtEsNum(railPeMed, 0)}x
+                  </div>
+                )}
               </div>
-              <button onClick={onClose} className="text-zinc-500 hover:text-zinc-200">✕</button>
+              <button onClick={onClose} className="shrink-0 text-zinc-500 hover:text-zinc-200">✕</button>
             </div>
             <div className="max-h-[60vh] overflow-y-auto">
               {rail.length === 0 && <div className="px-4 py-6 text-center text-xs text-zinc-600">Sin otros papeles del sector.</div>}
-              {rail.map((x) => (
-                <button key={x.ticker} onClick={() => onSelect(x.ticker)} className="flex w-full items-center gap-3 border-b border-zinc-800/60 px-4 py-2.5 text-left hover:bg-zinc-800/40">
-                  <Logo s={x} size={26} />
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm font-medium">{x.ticker}</div>
-                    <div className="truncate text-[11px] text-zinc-600">{x.name}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className={`nums text-xs ${(x.chg_pct ?? 0) >= 0 ? "text-green-400" : "text-red-400"}`}>{fmtPct(x.chg_pct)}</div>
-                    <div className="nums text-xs text-zinc-400">{fmtPrice(x.price)}</div>
-                  </div>
-                </button>
-              ))}
+              {rail.map((x) => {
+                const xf = funds[x.ticker];
+                return (
+                  <button key={x.ticker} onClick={() => onSelect(x.ticker)} className="flex w-full items-center gap-3 border-b border-zinc-800/60 px-4 py-3 text-left hover:bg-zinc-800/40">
+                    <Logo s={x} size={30} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">{x.ticker}</span>
+                        <ClassBadge s={x} />
+                      </div>
+                      <div className="truncate text-[11px] text-zinc-600">{x.name}</div>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <div className={`nums text-sm ${(x.chg_pct ?? 0) >= 0 ? "text-green-400" : "text-red-400"}`}>{fmtPct(x.chg_pct)}</div>
+                      <div className="nums text-[11px] text-zinc-500">P/E {xf?.pe != null && xf.pe > 0 ? `${fmtEsNum(xf.pe, 0)}x` : "—"}</div>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
-            <button onClick={onClose} className="m-3 rounded-lg bg-violet-600/90 py-2.5 text-center text-sm font-medium text-white hover:bg-violet-600">
-              Volver al panel
-            </button>
           </div>
         </aside>
       </div>
