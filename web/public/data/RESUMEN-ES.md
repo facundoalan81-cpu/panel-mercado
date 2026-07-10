@@ -7,9 +7,10 @@ El front (modo Análisis y detalle) usa este archivo y cae al `summary` en ingl�
 el inglés (factual), nunca queda vacío.
 
 ## Cobertura actual
-Los 64 papeles **curados** del universo (mega-caps US, todos los ADR argentinos, Brasil, China y
-las altas recientes: ASTS/IREN/LAC/SATL/KEEL). Son los que el grupo efectivamente discute. La cola
-larga del S&P 500 (nombres poco hablados) cae al summary inglés hasta que se traduzcan.
+**598 papeles = 100% de los tickers con `summary` en `fundamentals-latest.json`** (los 600 del
+universo menos 2 sin summary). Incluye los 64 curados originales (mega-caps US, ADR argentinos,
+Brasil, China) más toda la cola larga del S&P 500 y las locales argentinas, traducidas en tanda.
+Los originales curados no se tocaron; el resto se generó a partir del summary inglés + contexto.
 
 ## Cómo extender (incremental — NO regenerar todo)
 1. Sacar los tickers sin resumen ES:
