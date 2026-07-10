@@ -81,8 +81,18 @@ function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; chi
   return <button onClick={onClick} className={`shrink-0 cursor-pointer rounded-full border px-2.5 py-1 text-xs transition-colors duration-200 ${on ? "border-zinc-400 bg-zinc-200 font-medium text-zinc-900" : "border-zinc-700/70 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"}`}>{children}</button>;
 }
 
-export default function Dashboard({ data, funds }: { data: SignalsPayload; funds: Fundamentals }) {
+export default function Dashboard({ data }: { data: SignalsPayload }) {
   const { favs, toggle } = useFavorites();
+  // Fundamentales fuera del HTML inicial: se fetchean lazy same-origin (−0.9MB de RSC).
+  const [funds, setFunds] = useState<Fundamentals>({});
+  useEffect(() => {
+    let alive = true;
+    fetch("/data/fundamentals-latest.json", { cache: "force-cache" })
+      .then((r) => (r.ok ? r.json() : {}))
+      .then((j) => { if (alive) setFunds(j as Fundamentals); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [tab, setTab] = useState("todos");
   const [countries, setCountries] = useState<Set<string>>(new Set());
