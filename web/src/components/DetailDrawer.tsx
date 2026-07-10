@@ -37,8 +37,8 @@ export function DetailContent({ s, f, onClose, onAnalysis, wide, onToggleWide }:
         <ClassBadge s={s} full />
         <span className="text-xs text-zinc-600">1D</span>
         <div className="ml-auto flex items-center gap-1">
-          {onToggleWide && <button onClick={onToggleWide} title={wide ? "Achicar panel" : "Ampliar panel"} className="hidden cursor-pointer rounded-md px-2 py-1 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200 lg:block"><Icon name={wide ? "collapse" : "expand"} size={15} /></button>}
-          <button onClick={onClose} className="cursor-pointer rounded-md px-2 py-1 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200"><Icon name="x" size={15} /></button>
+          {onToggleWide && <button onClick={onToggleWide} aria-label={wide ? "Achicar panel" : "Ampliar panel"} title={wide ? "Achicar panel" : "Ampliar panel"} className="hidden cursor-pointer rounded-md px-2 py-1 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200 lg:block"><Icon name={wide ? "collapse" : "expand"} size={15} /></button>}
+          <button onClick={onClose} aria-label="Cerrar detalle" className="cursor-pointer rounded-md px-2 py-1 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200"><Icon name="x" size={15} /></button>
         </div>
       </div>
 

@@ -74,11 +74,11 @@ function useFavorites() {
 }
 
 function Toggle({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) {
-  return <button onClick={onClick} className={`inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-md border px-2 py-1 text-xs transition-colors duration-200 ${on ? "border-zinc-500 bg-zinc-800 text-zinc-100" : "border-zinc-800 text-zinc-500 hover:text-zinc-300"}`}>{children}</button>;
+  return <button onClick={onClick} className={`inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-md border px-2 py-1.5 text-xs transition-colors duration-200 ${on ? "border-zinc-500 bg-zinc-800 text-zinc-100" : "border-zinc-800 text-zinc-500 hover:text-zinc-300"}`}>{children}</button>;
 }
 
 function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) {
-  return <button onClick={onClick} className={`shrink-0 cursor-pointer rounded-full border px-2.5 py-1 text-xs transition-colors duration-200 ${on ? "border-zinc-400 bg-zinc-200 font-medium text-zinc-900" : "border-zinc-700/70 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"}`}>{children}</button>;
+  return <button onClick={onClick} className={`shrink-0 cursor-pointer rounded-full border px-2.5 py-1.5 text-xs transition-colors duration-200 ${on ? "border-zinc-400 bg-zinc-200 font-medium text-zinc-900" : "border-zinc-700/70 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"}`}>{children}</button>;
 }
 
 export default function Dashboard({ data }: { data: SignalsPayload }) {
@@ -463,7 +463,7 @@ export default function Dashboard({ data }: { data: SignalsPayload }) {
                       const up = (s.chg_pct ?? 0) >= 0;
                       const e = s.emas;
                       return (
-                        <tr key={s.ticker} onClick={() => setSelected(s)} className="cursor-pointer border-t border-zinc-800/60 transition-colors hover:bg-zinc-900/50">
+                        <tr key={s.ticker} onClick={() => setSelected(s)} tabIndex={0} onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); setSelected(s); } }} aria-label={`Ver ${s.ticker} — ${s.name}`} className="cursor-pointer border-t border-zinc-800/60 transition-colors hover:bg-zinc-900/50 focus:bg-zinc-900/50 focus:outline-none focus-visible:ring-1 focus-visible:ring-violet-500/60">
                           <td className="px-3 py-2">
                             <div className="flex items-center gap-2.5">
                               <Logo s={s} />
@@ -497,7 +497,7 @@ export default function Dashboard({ data }: { data: SignalsPayload }) {
                           <td className="px-3 py-2"><VolCell s={s} /></td>
                           <td className="px-3 py-2"><VolFlowCell s={s} /></td>
                           <td className="px-2 py-2 text-center">
-                            <button onClick={(e2) => { e2.stopPropagation(); toggle(s.ticker); }} className={`cursor-pointer ${favs.has(s.ticker) ? "text-amber-400" : "text-zinc-700 hover:text-zinc-400"}`} title="Mi lista"><Icon name="star" size={15} fill={favs.has(s.ticker)} /></button>
+                            <button onClick={(e2) => { e2.stopPropagation(); toggle(s.ticker); }} aria-label={favs.has(s.ticker) ? `Quitar ${s.ticker} de mi lista` : `Guardar ${s.ticker} en mi lista`} className={`cursor-pointer p-1 ${favs.has(s.ticker) ? "text-amber-400" : "text-zinc-700 hover:text-zinc-400"}`} title="Mi lista"><Icon name="star" size={15} fill={favs.has(s.ticker)} /></button>
                           </td>
                         </tr>
                       );

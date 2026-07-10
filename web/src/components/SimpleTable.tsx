@@ -43,7 +43,7 @@ export function SimpleTable({
 }) {
   return (
     <div className="overflow-x-auto rounded-lg border border-zinc-800">
-      <table className="w-full min-w-[840px] text-sm">
+      <table className="w-full min-w-[840px] text-[15px]">
         <thead className="sticky top-0 z-20">
           <tr className="bg-[#141417] text-left text-[11px] uppercase tracking-wide text-zinc-500 shadow-[0_1px_0_#27272a]">
             <th className="whitespace-nowrap px-3 py-2.5 font-medium">Papel</th>
@@ -67,19 +67,19 @@ export function SimpleTable({
             {rows.map((s) => {
               const up = (s.chg_pct ?? 0) >= 0;
               return (
-                <tr key={s.ticker} onClick={() => onSelect(s)} className="cursor-pointer border-t border-zinc-800/60 transition-colors hover:bg-zinc-900/50">
+                <tr key={s.ticker} onClick={() => onSelect(s)} tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(s); } }} aria-label={`Ver ${s.ticker} — ${s.name}`} className="cursor-pointer border-t border-zinc-800/60 transition-colors hover:bg-zinc-900/50 focus:bg-zinc-900/50 focus:outline-none focus-visible:ring-1 focus-visible:ring-violet-500/60">
                   <td className="px-3 py-2.5">
                     <div className="flex items-center gap-2.5">
                       <Logo s={s} size={26} />
                       <div className="leading-tight">
                         <div className="flex items-center gap-1.5 font-medium"><Flag s={s} size={14} />{s.ticker}</div>
-                        <div className="max-w-[170px] truncate text-[11px] text-zinc-600">{s.name}</div>
+                        <div className="max-w-[170px] truncate text-xs text-zinc-600">{s.name}</div>
                       </div>
                     </div>
                   </td>
                   <td className="px-3 py-2.5 text-right">
                     <div className={`nums text-base font-bold leading-none ${up ? "text-green-400" : "text-red-400"}`}>{fmtPct(s.chg_pct)}</div>
-                    <div className="nums mt-0.5 text-[11px] text-zinc-500">{fmtPrice(s.price, s.currency)}</div>
+                    <div className="nums mt-0.5 text-xs text-zinc-500">{fmtPrice(s.price, s.currency)}</div>
                   </td>
                   <td className="px-3 py-2.5"><div className="h-7 w-20">{s.spark?.price ? <LineSpark vals={s.spark.price.slice(-8)} color={up ? "#22c55e" : "#ef4444"} w={80} h={26} /> : null}</div></td>
                   <td className="whitespace-nowrap px-3 py-2.5"><BiasBadge s={s} /></td>
@@ -90,10 +90,15 @@ export function SimpleTable({
                     <HPill label="Largo" h={s.horizon?.largo} />
                   </td>
                   <td className="px-3 py-2.5 text-center">
-                    <Tip text={s.score == null ? "Sin datos" : `Cumple ${s.score} de los 5 criterios`}><ScorePips score={s.score} /></Tip>
+                    <Tip text={s.score == null ? "Sin datos" : `Cumple ${s.score} de los 5 criterios`}>
+                      <span className="inline-flex items-center gap-1.5">
+                        <ScorePips score={s.score} />
+                        <span className="nums text-xs text-zinc-500">{s.score ?? "–"}/5</span>
+                      </span>
+                    </Tip>
                   </td>
                   <td className="px-2 py-2.5 text-center">
-                    <button onClick={(e) => { e.stopPropagation(); onToggleFav(s.ticker); }} className={`cursor-pointer ${favs.has(s.ticker) ? "text-amber-400" : "text-zinc-700 hover:text-zinc-400"}`} title="Mi lista">
+                    <button onClick={(e) => { e.stopPropagation(); onToggleFav(s.ticker); }} aria-label={favs.has(s.ticker) ? `Quitar ${s.ticker} de mi lista` : `Guardar ${s.ticker} en mi lista`} className={`cursor-pointer p-1 ${favs.has(s.ticker) ? "text-amber-400" : "text-zinc-700 hover:text-zinc-400"}`} title="Mi lista">
                       <Icon name="star" size={16} fill={favs.has(s.ticker)} />
                     </button>
                   </td>
