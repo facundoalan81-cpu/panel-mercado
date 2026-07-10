@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import type { Signal, Fundamental, Fundamentals } from "@/lib/types";
 import { fmtPrice, fmtPct, sectorMedians, vsSector, earningsInfo, fmtEsNum, fundVerdict, ADR_PAIRS } from "@/lib/format";
 import { ClassBadge } from "./bits";
+import { Tip } from "./Tooltip";
 import { Logo } from "./Logo";
 import { FundChart, FundBars } from "./FundChart";
 
@@ -117,7 +118,9 @@ export function AnalysisMode({
               <Logo s={s} size={64} />
               <div className="min-w-0 flex-1">
                 <div className="mb-1 flex flex-wrap items-center gap-2">
-                  <span className="rounded-md border border-zinc-700 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-zinc-500">Cierre</span>
+                  <Tip text="Datos al cierre del día" className="cursor-help">
+                    <span className="rounded-md border border-zinc-700 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-zinc-500">Cierre</span>
+                  </Tip>
                   <ClassBadge s={s} full />
                 </div>
                 <h1 className="truncate text-3xl font-semibold tracking-tight">{f?.name ?? s.name}</h1>
@@ -256,9 +259,14 @@ export function AnalysisMode({
                   <ChartCard title="Ganancia por acción (EPS)" sub="Trimestral ($ por acción)"><FundBars data={f.eps_q} color="#a78bfa" /></ChartCard>
                 )}
                 <ChartCard title="Free cash flow" sub="Anual (miles de M)"><FundBars data={f.fcf} color="#2dd4bf" diverge /></ChartCard>
-                {f.div_hist && Object.values(f.div_hist).some((v) => v > 0) && (
-                  <ChartCard title="Dividendo por acción" sub="Anual ($ por acción)"><FundBars data={f.div_hist} color="#fbbf24" /></ChartCard>
-                )}
+                {(() => {
+                  // El año en curso está incompleto -> se excluye para no leerse como recorte de dividendo.
+                  const cy = new Date().getFullYear();
+                  const dh = f.div_hist ? Object.fromEntries(Object.entries(f.div_hist).filter(([y]) => Number(y) < cy)) : null;
+                  return dh && Object.values(dh).some((v) => v > 0) ? (
+                    <ChartCard title="Dividendo por acción" sub="Anual, años cerrados ($ por acción)"><FundBars data={dh} color="#fbbf24" /></ChartCard>
+                  ) : null;
+                })()}
                 <ChartCard title="Dilución" sub="Acciones en circulación (M)"><FundChart data={f.shares} color="#f59e0b" /></ChartCard>
               </div>
             </>
@@ -316,11 +324,14 @@ export function AnalysisMode({
 }
 
 function FinancialsTable({ f }: { f: Fundamental }) {
-  const years = Array.from(new Set([...Object.keys(f.revenue), ...Object.keys(f.fcf), ...Object.keys(f.shares), ...Object.keys(f.net_income ?? {}), ...Object.keys(f.div_hist ?? {})]))
+  // Dividendo: solo años cerrados (el año en curso está incompleto y engaña).
+  const cy = new Date().getFullYear();
+  const divClosed = f.div_hist ? Object.fromEntries(Object.entries(f.div_hist).filter(([y]) => Number(y) < cy)) : undefined;
+  const years = Array.from(new Set([...Object.keys(f.revenue), ...Object.keys(f.fcf), ...Object.keys(f.shares), ...Object.keys(f.net_income ?? {}), ...Object.keys(divClosed ?? {})]))
     .map(Number).sort((a, b) => a - b);
   const cell = (rec: Record<string, number> | undefined, y: number | string, dec = 1) =>
     rec?.[String(y)] != null ? fmtEsNum(rec[String(y)], dec) : "—";
-  const hasDiv = f.div_hist && Object.values(f.div_hist).some((v) => v > 0);
+  const hasDiv = divClosed && Object.values(divClosed).some((v) => v > 0);
   // Margen FCF por año (no tenemos ingreso neto por año -> flujo libre / ventas, honesto).
   const marginCell = (y: number) => {
     const r = f.revenue[String(y)]; const c = f.fcf[String(y)];
@@ -347,7 +358,7 @@ function FinancialsTable({ f }: { f: Fundamental }) {
             <tr className="border-t border-zinc-800/60"><td className="px-3 py-2 text-zinc-400">Margen FCF</td>{years.map((y) => <td key={y} className="px-3 py-2 text-right">{marginCell(y)}</td>)}</tr>
             <tr className="border-t border-zinc-800/60"><td className="px-3 py-2 text-zinc-400">Acciones (M)</td>{years.map((y) => <td key={y} className="px-3 py-2 text-right">{cell(f.shares, y)}</td>)}</tr>
             {hasDiv && (
-              <tr className="border-t border-zinc-800/60"><td className="px-3 py-2 text-zinc-400">Dividendo/acción</td>{years.map((y) => <td key={y} className="px-3 py-2 text-right">{cell(f.div_hist, y, 2)}</td>)}</tr>
+              <tr className="border-t border-zinc-800/60"><td className="px-3 py-2 text-zinc-400">Dividendo/acción</td>{years.map((y) => <td key={y} className="px-3 py-2 text-right">{cell(divClosed, y, 2)}</td>)}</tr>
             )}
           </tbody>
         </table>
