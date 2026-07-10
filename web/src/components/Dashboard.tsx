@@ -268,17 +268,19 @@ export default function Dashboard({ data }: { data: SignalsPayload }) {
 
   const tally = useMemo(() => { const c = (k: string) => viewItems.filter((s) => s.classification === k).length; return { fuerte: c("FUERTE"), potencial: c("POTENCIAL"), revisar: c("A_REVISAR") }; }, [viewItems]);
   const updated = useMemo(() => { const d = new Date(data.generated_at); const h = (Date.now() - d.getTime()) / 36e5; return { rel: h < 1 ? "recién" : h < 36 ? `hace ${Math.round(h)} h` : `hace ${Math.round(h / 24)} d`, stale: h > 48, label: d.toLocaleString("es-AR") }; }, [data.generated_at]);
-  const liveAge = useMemo(() => {
-    void clock; // re-evalúa cada segundo para refrescar el "hace X"
+  // Frescura POR REGIÓN (honesta): cada card se colorea con SU fuente, sin cruzarlas.
+  // Argentina = data912 (arTs). US + ADRs = Yahoo (live/liveFast). Si Yahoo cae, la card
+  // US deja de decir "fresco" aunque data912 siga vivo (y viceversa).
+  const arFresh = useMemo(() => {
+    void clock; // re-evalúa cada segundo
+    return arTs != null && (Date.now() - arTs) / 1000 < 10 * 60;
+  }, [arTs, clock]);
+  const usFresh = useMemo(() => {
+    void clock;
     const ts = [liveFast?.t, live?.t].filter(Boolean).map((t) => new Date(t as string).getTime());
-    if (arTs) ts.push(arTs); // data912 (Argentina al día) también cuenta como fuente fresca
-    if (!ts.length) return null;
-    const newest = Math.max(...ts);
-    const sec = (Date.now() - newest) / 1000;
-    const txt = sec < 90 ? "recién" : sec < 3600 ? `hace ${Math.round(sec / 60)} min` : `hace ${Math.round(sec / 3600)} h`;
-    return { txt, fresh: sec < 15 * 60, label: new Date(newest).toLocaleString("es-AR") };
-  }, [live, liveFast, arTs, clock]);
-  const freshChip = liveAge ? liveAge.fresh : !updated.stale;
+    if (!ts.length) return false;
+    return (Date.now() - Math.max(...ts)) / 1000 < 15 * 60;
+  }, [live, liveFast, clock]);
 
   const toggleSort = (key: string) => setSort((p) => (p?.key === key ? (p.dir === "desc" ? { key, dir: "asc" } : null) : { key, dir: "desc" }));
 
@@ -297,24 +299,24 @@ export default function Dashboard({ data }: { data: SignalsPayload }) {
             <span className="hidden text-right text-[11px] text-zinc-500 lg:block">{data.count} activos</span>
             {/* Card ARGENTINA: al día vía data912 */}
             <Tip text="Papeles argentinos (BYMA) casi en tiempo real (vía data912). Para ejecutar, su bróker de siempre.">
-              <div className={`flex cursor-help items-center gap-2 rounded-xl border px-2.5 py-1.5 transition-colors ${freshChip ? "border-emerald-500/25 bg-emerald-500/[0.06]" : "border-zinc-800 bg-zinc-900/40"}`}>
+              <div className={`flex cursor-help items-center gap-2 rounded-xl border px-2.5 py-1.5 transition-colors ${arFresh ? "border-emerald-500/25 bg-emerald-500/[0.06]" : "border-zinc-800 bg-zinc-900/40"}`}>
                 <span className="relative flex h-2 w-2 shrink-0">
-                  {freshChip && <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400/50 motion-safe:animate-ping" />}
-                  <span className={`relative inline-flex h-2 w-2 rounded-full ${freshChip ? "bg-emerald-400" : "bg-zinc-500"}`} />
+                  {arFresh && <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400/50 motion-safe:animate-ping" />}
+                  <span className={`relative inline-flex h-2 w-2 rounded-full ${arFresh ? "bg-emerald-400" : "bg-zinc-500"}`} />
                 </span>
                 <div className="leading-tight">
                   <div className="text-[9px] uppercase tracking-wide text-zinc-500">Argentina</div>
-                  <div className={`text-xs font-semibold ${freshChip ? "text-emerald-300" : "text-zinc-300"}`}>{freshChip ? "Al día" : "Últimos precios"}</div>
+                  <div className={`text-xs font-semibold ${arFresh ? "text-emerald-300" : "text-zinc-300"}`}>{arFresh ? "Al día" : "Últimos precios"}</div>
                 </div>
               </div>
             </Tip>
-            {/* Card US/RESTO: diferido ~15 min */}
+            {/* Card US/RESTO: relay Yahoo (~15 min de base); el punto refleja si el feed sigue vivo */}
             <Tip text="US y ADRs: diferido ~15 min (dato gratuito). El tiempo real de las bolsas está licenciado; para análisis técnico no afecta.">
-              <div className="flex cursor-help items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/40 px-2.5 py-1.5">
-                <span className="h-2 w-2 shrink-0 rounded-full bg-amber-400/90" />
+              <div className={`flex cursor-help items-center gap-2 rounded-xl border px-2.5 py-1.5 transition-colors ${usFresh ? "border-amber-500/25 bg-amber-500/[0.06]" : "border-zinc-800 bg-zinc-900/40"}`}>
+                <span className={`h-2 w-2 shrink-0 rounded-full ${usFresh ? "bg-amber-400/90" : "bg-zinc-500"}`} />
                 <div className="leading-tight">
                   <div className="text-[9px] uppercase tracking-wide text-zinc-500">US + ADRs</div>
-                  <div className="text-xs font-semibold text-zinc-300">Diferido ~15 min</div>
+                  <div className={`text-xs font-semibold ${usFresh ? "text-zinc-300" : "text-zinc-400"}`}>{usFresh ? "Diferido ~15 min" : "Últimos precios"}</div>
                 </div>
               </div>
             </Tip>
