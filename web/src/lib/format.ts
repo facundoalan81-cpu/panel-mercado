@@ -1,4 +1,4 @@
-import type { Classification, Country, Signal } from "./types";
+import type { Classification, Country, Signal, Fundamentals, SectorMedians, FundMeta } from "./types";
 
 export const CLASS_META: Record<
   Classification,
@@ -94,6 +94,41 @@ export function copyReading(s: Signal): string {
   else estado = "sin alineación técnica clara";
   const tail = s.rsi != null ? `RSI ${Math.round(s.rsi)} — ${estado}` : estado;
   return `${flagFor(s)} $${s.ticker} — ${macd}.${manos} ${tail}. — Radar Fer Inversiones`;
+}
+
+// Claves reservadas del JSON de fundamentales (no son tickers).
+export function sectorMedians(funds: Fundamentals): SectorMedians {
+  return ((funds as unknown as Record<string, unknown>)["_sector_medians"] as SectorMedians) ?? {};
+}
+export function fundMeta(funds: Fundamentals): FundMeta {
+  return ((funds as unknown as Record<string, unknown>)["_meta"] as FundMeta) ?? {};
+}
+
+// Semáforo: compara un valor contra la mediana del sector. dir="lower" = más bajo es mejor (P/E, EV/EBITDA).
+// ±20% de la mediana = "en línea".
+export function vsSector(value: number | null | undefined, median: number | undefined, dir: "lower" | "higher"): { label: string; col: string } | null {
+  if (value == null || median == null || median === 0) return null;
+  const ratio = value / median;
+  if (ratio >= 0.8 && ratio <= 1.2) return { label: "en línea con el sector", col: "text-amber-400" };
+  const good = dir === "lower" ? ratio < 0.8 : ratio > 1.2;
+  if (dir === "lower") return good ? { label: "barato vs sector", col: "text-green-400" } : { label: "caro vs sector", col: "text-red-400" };
+  return good ? { label: "mejor que el sector", col: "text-green-400" } : { label: "peor que el sector", col: "text-red-400" };
+}
+
+// Próximo balance: fecha corta, días que faltan, y si es esta semana (≤7 días).
+export function earningsInfo(iso?: string | null): { date: string; days: number; soon: boolean } | null {
+  if (!iso) return null;
+  const d = new Date(iso + "T00:00:00Z");
+  if (isNaN(d.getTime())) return null;
+  const days = Math.ceil((d.getTime() - Date.now()) / 86400000);
+  const date = d.toLocaleDateString("es-AR", { day: "2-digit", month: "short", timeZone: "UTC" });
+  return { date, days, soon: days >= 0 && days <= 7 };
+}
+
+// Número con formato es-AR (puntos de miles, coma decimal).
+export function fmtEsNum(n: number | null | undefined, dec = 1): string {
+  if (n == null) return "—";
+  return n.toLocaleString("es-AR", { minimumFractionDigits: dec, maximumFractionDigits: dec });
 }
 
 // Explicaciones en castellano para tooltips (enseñar al usuario)

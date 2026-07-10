@@ -83,13 +83,18 @@ function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; chi
 
 export default function Dashboard({ data }: { data: SignalsPayload }) {
   const { favs, toggle } = useFavorites();
-  // Fundamentales fuera del HTML inicial: se fetchean lazy same-origin (−0.9MB de RSC).
+  // Fundamentales + resúmenes ES fuera del HTML inicial: se fetchean lazy same-origin (−0.9MB de RSC).
   const [funds, setFunds] = useState<Fundamentals>({});
+  const [resumenEs, setResumenEs] = useState<Record<string, string>>({});
   useEffect(() => {
     let alive = true;
     fetch("/data/fundamentals-latest.json", { cache: "force-cache" })
       .then((r) => (r.ok ? r.json() : {}))
       .then((j) => { if (alive) setFunds(j as Fundamentals); })
+      .catch(() => {});
+    fetch("/data/resumen-es.json", { cache: "force-cache" })
+      .then((r) => (r.ok ? r.json() : {}))
+      .then((j) => { if (alive) setResumenEs(j as Record<string, string>); })
       .catch(() => {});
     return () => { alive = false; };
   }, []);
@@ -546,7 +551,7 @@ export default function Dashboard({ data }: { data: SignalsPayload }) {
         <aside className={`hidden shrink-0 transition-[width] duration-200 lg:block ${detailWide ? "w-[620px]" : "w-[360px]"}`}>
           <div className="sticky top-[60px] max-h-[calc(100vh-72px)] overflow-hidden rounded-xl border border-zinc-800">
             {selected ? (
-              <div className="h-[calc(100vh-72px)]"><DetailContent s={selected} f={funds[selected.ticker] ?? null} onClose={() => setSelected(null)} onAnalysis={(t) => { setSelected(null); setAnalysis(t); }} wide={detailWide} onToggleWide={() => setDetailWide((v) => !v)} /></div>
+              <div className="h-[calc(100vh-72px)]"><DetailContent s={selected} f={funds[selected.ticker] ?? null} resumen={resumenEs[selected.ticker]} onClose={() => setSelected(null)} onAnalysis={(t) => { setSelected(null); setAnalysis(t); }} wide={detailWide} onToggleWide={() => setDetailWide((v) => !v)} /></div>
             ) : (
               <div className="max-h-[calc(100vh-72px)] overflow-y-auto p-3"><MarketPanel items={filtered} fng={data.fng} onSelect={setSelected} /></div>
             )}
@@ -554,9 +559,9 @@ export default function Dashboard({ data }: { data: SignalsPayload }) {
         </aside>
       </div>
 
-      <DetailDrawer s={selected} f={selected ? funds[selected.ticker] ?? null : null} onClose={() => setSelected(null)} onAnalysis={(t) => { setSelected(null); setAnalysis(t); }} />
+      <DetailDrawer s={selected} f={selected ? funds[selected.ticker] ?? null : null} resumen={selected ? resumenEs[selected.ticker] : undefined} onClose={() => setSelected(null)} onAnalysis={(t) => { setSelected(null); setAnalysis(t); }} />
       {analysis && byTicker.get(analysis) && (
-        <AnalysisMode s={byTicker.get(analysis)!} f={funds[analysis] ?? null} all={viewItems} funds={funds} onSelect={(t) => setAnalysis(t)} onClose={() => setAnalysis(null)} />
+        <AnalysisMode s={byTicker.get(analysis)!} f={funds[analysis] ?? null} resumen={resumenEs[analysis]} all={viewItems} funds={funds} onSelect={(t) => setAnalysis(t)} onClose={() => setAnalysis(null)} />
       )}
     </div>
   );

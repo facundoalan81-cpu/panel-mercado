@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { Signal, Fundamental } from "@/lib/types";
-import { CLASS_META, COUNTRY_META, fmtPct, fmtPrice, signalHint, copyReading } from "@/lib/format";
+import { CLASS_META, COUNTRY_META, fmtPct, fmtPrice, signalHint, copyReading, earningsInfo } from "@/lib/format";
 import { ClassBadge, ScorePips, MAsGlyph } from "./bits";
 import { Logo } from "./Logo";
 import { Icon } from "./Icons";
@@ -22,7 +22,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   return <h3 className="mb-2 mt-5 text-[11px] font-medium uppercase tracking-wider text-zinc-500">{children}</h3>;
 }
 
-export function DetailContent({ s, f, onClose, onAnalysis, wide, onToggleWide }: { s: Signal; f?: Fundamental | null; onClose: () => void; onAnalysis: (t: string) => void; wide?: boolean; onToggleWide?: () => void }) {
+export function DetailContent({ s, f, resumen, onClose, onAnalysis, wide, onToggleWide }: { s: Signal; f?: Fundamental | null; resumen?: string; onClose: () => void; onAnalysis: (t: string) => void; wide?: boolean; onToggleWide?: () => void }) {
   const o = s.ohlc;
   const up = (s.chg_pct ?? 0) >= 0;
   const [copied, setCopied] = useState(false);
@@ -55,7 +55,10 @@ export function DetailContent({ s, f, onClose, onAnalysis, wide, onToggleWide }:
           {s.score != null && <span className="ml-auto mb-1"><ScorePips score={s.score} /></span>}
         </div>
 
-        <button onClick={() => onAnalysis(s.ticker)} className="mb-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-violet-600/90 py-2.5 text-sm font-medium text-white transition-colors hover:bg-violet-600"><Icon name="sparkles" size={15} /> Abrir modo Análisis</button>
+        <button onClick={() => onAnalysis(s.ticker)} className="mb-3 flex w-full cursor-pointer flex-col items-center gap-0.5 rounded-lg bg-violet-600/90 py-2.5 text-white transition-colors hover:bg-violet-600">
+          <span className="flex items-center gap-2 text-sm font-medium"><Icon name="sparkles" size={15} /> La empresa a fondo</span>
+          <span className="text-[10px] text-violet-200/80">Ingresos · Valuación · Balances · Dividendos</span>
+        </button>
 
         {s.status === "ok" && (
           <div className="mb-3 rounded-lg border border-zinc-800 bg-zinc-900/40 px-3 py-2">
@@ -131,6 +134,18 @@ export function DetailContent({ s, f, onClose, onAnalysis, wide, onToggleWide }:
         {f && (
           <>
             <SectionTitle>La empresa en números</SectionTitle>
+            {(resumen ?? f.summary) && <p className="mb-2 line-clamp-3 text-xs leading-relaxed text-zinc-400">{resumen ?? f.summary}</p>}
+            {(() => {
+              const e = earningsInfo(f.earnings_ts);
+              const hasDiv = f.dividend_yield != null;
+              if (!e && !hasDiv) return null;
+              return (
+                <div className="mb-1.5 grid grid-cols-2 gap-1.5">
+                  <KV k="Próximo balance" v={e ? <span className="inline-flex items-center gap-1">{e.date}{e.soon && <span className="rounded bg-violet-500/25 px-1 text-[9px] font-medium text-violet-200">esta semana</span>}</span> : "—"} accent={e?.soon ? "text-violet-200" : undefined} />
+                  <KV k="Dividendo" v={hasDiv ? (f.dividend_yield! > 0 ? `${f.dividend_yield!.toFixed(2)}%` : "No paga") : "—"} />
+                </div>
+              );
+            })()}
             {f.currency === "ARS" ? (
               <>
                 <div className="grid grid-cols-2 gap-1.5">
@@ -183,7 +198,7 @@ export function DetailContent({ s, f, onClose, onAnalysis, wide, onToggleWide }:
 }
 
 /** Overlay para pantallas chicas (en desktop el detalle va en panel fijo). */
-export function DetailDrawer({ s, f, onClose, onAnalysis }: { s: Signal | null; f?: Fundamental | null; onClose: () => void; onAnalysis: (t: string) => void }) {
+export function DetailDrawer({ s, f, resumen, onClose, onAnalysis }: { s: Signal | null; f?: Fundamental | null; resumen?: string; onClose: () => void; onAnalysis: (t: string) => void }) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
     if (s) window.addEventListener("keydown", onKey);
@@ -193,7 +208,7 @@ export function DetailDrawer({ s, f, onClose, onAnalysis }: { s: Signal | null; 
   return (
     <div className="fixed inset-0 z-50 lg:hidden">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <aside className="absolute right-0 top-0 h-full w-full max-w-[480px] border-l border-zinc-800 shadow-2xl"><DetailContent s={s} f={f} onClose={onClose} onAnalysis={onAnalysis} /></aside>
+      <aside className="absolute right-0 top-0 h-full w-full max-w-[480px] border-l border-zinc-800 shadow-2xl"><DetailContent s={s} f={f} resumen={resumen} onClose={onClose} onAnalysis={onAnalysis} /></aside>
     </div>
   );
 }

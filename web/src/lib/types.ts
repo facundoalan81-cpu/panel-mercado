@@ -121,6 +121,27 @@ export interface Fundamental {
   revenue: Record<string, number>;
   fcf: Record<string, number>;
   shares: Record<string, number>;
+  // campos enriquecidos (opcionales: el JSON viejo no los tiene hasta el próximo build)
+  dividend_yield?: number | null;
+  payout?: number | null;
+  beta?: number | null;
+  target?: number | null;
+  analysts?: number | null;
+  reco?: string | null;
+  hi52?: number | null;
+  lo52?: number | null;
+  debt_equity?: number | null;
+  current_ratio?: number | null;
+  total_cash?: number | null;
+  total_debt?: number | null;
+  earnings_ts?: string | null;      // ISO del próximo balance
+  rev_q?: Record<string, number>;   // {YYYYQn: B} últimos 8 trimestres
 }
 
 export type Fundamentals = Record<string, Fundamental>;
+
+export interface SectorMedian {
+  pe?: number; profit_margin?: number; roe?: number; rev_growth?: number; ev_ebitda?: number;
+}
+export type SectorMedians = Record<string, SectorMedian>;
+export interface FundMeta { generated_at?: string }

@@ -13,8 +13,11 @@ export function FundChart({
   w?: number;
   h?: number;
 }) {
-  const years = Object.keys(data).map(Number).sort((a, b) => a - b);
-  const pts = years.map((y) => ({ y, v: data[String(y)] }));
+  // Soporta claves anuales ("2025") y trimestrales ("2025Q2").
+  const ord = (k: string) => (k.includes("Q") ? Number(k.slice(0, 4)) * 4 + Number(k.slice(5)) : Number(k) * 4);
+  const label = (k: string) => (k.includes("Q") ? `${k.slice(5)}T${k.slice(2, 4)}` : k);
+  const keys = Object.keys(data).sort((a, b) => ord(a) - ord(b));
+  const pts = keys.map((k) => ({ k, v: data[k] }));
   if (pts.length < 2) return <div className="grid h-[130px] place-items-center text-xs text-zinc-600">sin datos</div>;
 
   const vals = pts.map((p) => p.v);
@@ -38,11 +41,11 @@ export function FundChart({
       )}
       <path d={line} fill="none" stroke={color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
       {pts.map((p, i) => (
-        <circle key={p.y} cx={x(i)} cy={y(p.v)} r={2.5} fill={color} />
+        <circle key={p.k} cx={x(i)} cy={y(p.v)} r={2.5} fill={color} />
       ))}
       {pts.map((p, i) => (
-        <text key={"t" + p.y} x={x(i)} y={h - 6} textAnchor="middle" className="fill-zinc-600" style={{ fontSize: 9 }}>
-          {p.y}
+        <text key={"t" + p.k} x={x(i)} y={h - 6} textAnchor="middle" className="fill-zinc-600" style={{ fontSize: 9 }}>
+          {label(p.k)}
         </text>
       ))}
       <text x={w - padX} y={padTop + 2} textAnchor="end" fill={color} style={{ fontSize: 10, fontWeight: 600 }}>
