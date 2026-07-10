@@ -7,13 +7,13 @@ import Image from "next/image";
 // Al validar, /api/gate setea la cookie y recargamos -> el server muestra el panel.
 export function PasswordGate() {
   const [pw, setPw] = useState("");
-  const [err, setErr] = useState(false);
+  const [err, setErr] = useState<null | "bad" | "rate">(null);
   const [loading, setLoading] = useState(false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    setErr(false);
+    setErr(null);
     try {
       const r = await fetch("/api/gate", {
         method: "POST",
@@ -24,9 +24,9 @@ export function PasswordGate() {
         window.location.reload();
         return;
       }
-      setErr(true);
+      setErr(r.status === 429 ? "rate" : "bad");
     } catch {
-      setErr(true);
+      setErr("bad");
     }
     setLoading(false);
   }
@@ -49,11 +49,12 @@ export function PasswordGate() {
             type="password"
             autoFocus
             value={pw}
-            onChange={(e) => { setPw(e.target.value); setErr(false); }}
+            onChange={(e) => { setPw(e.target.value); setErr(null); }}
             placeholder="••••••••"
             className={`nums mt-1.5 w-full rounded-lg border bg-zinc-900/60 px-3 py-2.5 text-sm tracking-widest outline-none transition-colors ${err ? "border-red-500/60" : "border-zinc-700 focus:border-violet-500"}`}
           />
-          {err && <p className="mt-1.5 text-xs text-red-400">Contraseña incorrecta.</p>}
+          {err === "bad" && <p className="mt-1.5 text-xs text-red-400">Contraseña incorrecta.</p>}
+          {err === "rate" && <p className="mt-1.5 text-xs text-red-400">Demasiados intentos. Esperá un minuto.</p>}
         </div>
 
         <button
@@ -64,7 +65,8 @@ export function PasswordGate() {
           {loading ? "Verificando…" : "Entrar"}
         </button>
 
-        <p className="mt-5 text-center text-[11px] text-zinc-600">Acceso privado · Fer Inversiones</p>
+        <p className="mt-4 text-center text-xs text-zinc-500">¿No tenés la contraseña? Pedila en el grupo.</p>
+        <p className="mt-3 text-center text-[11px] text-zinc-600">Acceso privado · Fer Inversiones</p>
       </form>
     </div>
   );

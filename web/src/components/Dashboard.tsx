@@ -293,7 +293,7 @@ export default function Dashboard({ data }: { data: SignalsPayload }) {
           <Image src="/fi-logo.png" alt="Fer Inversiones" width={52} height={52} priority className="h-[52px] w-[52px] rounded-2xl object-cover shadow-lg shadow-black/50 ring-1 ring-white/15" />
           <div className="leading-tight">
             <div className="text-xl font-bold tracking-tight">Fer Inversiones</div>
-            <div className="text-xs text-violet-300/80">Radar de mercado</div>
+            <div className="text-xs text-violet-300/80">Radar de mercado · lo más fuerte arriba</div>
           </div>
           <div className="ml-auto flex items-center gap-3">
             <span className="hidden text-right text-[11px] text-zinc-500 lg:block">{data.count} activos</span>
@@ -424,6 +424,11 @@ export default function Dashboard({ data }: { data: SignalsPayload }) {
                   <p className="text-zinc-300">Tu lista está vacía</p>
                   <p className="mt-1 text-sm text-zinc-500">Tocá la <Icon name="star" size={13} className="inline -mt-0.5 text-zinc-500" /> al final de cualquier fila para guardar un papel. Se guarda en este navegador.</p>
                 </div>
+              ) : search.trim() ? (
+                <div className="mx-auto max-w-sm">
+                  <p className="text-zinc-300">No encontramos ese papel.</p>
+                  <p className="mt-1 text-sm text-zinc-500">Pedilo en el grupo y lo agregamos.</p>
+                </div>
               ) : "Sin resultados con estos filtros."}
             </div>
           ) : view === "simple" ? (
@@ -511,7 +516,10 @@ export default function Dashboard({ data }: { data: SignalsPayload }) {
             <span className="inline-flex items-center gap-1"><Icon name="trendUp" size={11} /> {tally.fuerte} alcistas</span>
             <span className="inline-flex items-center gap-1"><Icon name="trendUp" size={11} /> {tally.potencial} parciales</span>
             <span className="inline-flex items-center gap-1"><Icon name="alert" size={11} /> {tally.revisar} sobrecomprados</span>
-            <span>· Radar de Fer Inversiones · by Facundo Alan · Análisis técnico automatizado, no es recomendación de inversión.</span>
+          </p>
+          <p className="mx-auto mt-3 max-w-2xl text-center text-[11px] leading-relaxed text-zinc-600">
+            Análisis técnico automatizado — el radar te da la foto, el criterio lo ponen los asesores del grupo. No es recomendación de inversión.
+            <span className="mt-0.5 block text-zinc-700">Radar de Fer Inversiones · by Facundo Alan</span>
           </p>
         </main>
 
