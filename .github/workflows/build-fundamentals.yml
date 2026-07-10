@@ -1,13 +1,13 @@
 name: build-fundamentals
 
-# Fundamentales (KPIs + estados financieros anuales) de todas las acciones del universo.
-# Cambian lento -> corre SEMANAL, el domingo (mercado cerrado = cero presión extra sobre Yahoo,
-# que es el riesgo operativo #1 del proyecto). Merge incremental: si una corrida falla a mitad,
-# no se pierde lo previo (se siembra con el JSON ya commiteado).
+# Fundamentales (KPIs + estados financieros anuales/trimestrales) de todas las acciones del universo.
+# Corre 2x/semana (domingo y miércoles), fuera de horario de mercado (Yahoo = riesgo operativo #1).
+# Los campos vivos (P/E, target, próximo balance) no pueden envejecer una semana entera.
+# Merge incremental: si una corrida falla a mitad, no se pierde lo previo (semilla del JSON commiteado).
 
 on:
   schedule:
-    - cron: "0 12 * * 0"   # domingos 12:00 UTC
+    - cron: "0 12 * * 0,3"   # domingos y miércoles 12:00 UTC
   workflow_dispatch: {}
 
 permissions:

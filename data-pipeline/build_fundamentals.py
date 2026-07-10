@@ -11,6 +11,8 @@ import os
 import sys
 import time
 import random
+import datetime
+import statistics
 import warnings
 
 warnings.filterwarnings("ignore")
@@ -52,6 +54,58 @@ def _series(df, names, scale=1e9):
     return out
 
 
+def _series_q(df, names, scale=1e9, n=8):
+    """Igual que _series pero por trimestre, clave 'YYYYQn'; devuelve los últimos n."""
+    r = _row(df, names)
+    if r is None:
+        return {}
+    out = {}
+    for col, val in r.items():
+        try:
+            q = (col.month - 1) // 3 + 1
+            key = f"{col.year}Q{q}"
+            if val is not None and val == val:
+                out[key] = round(float(val) / scale, 3)
+        except Exception:
+            pass
+    keys = sorted(out.keys(), key=lambda k: (int(k[:4]), int(k[5:])))
+    return {k: out[k] for k in keys[-n:]}
+
+
+def _next_earnings(info, t):
+    """Fecha ISO del PRÓXIMO balance (la más cercana en el futuro). None si no hay."""
+    today = datetime.datetime.now(datetime.timezone.utc).date()
+    cands = []
+    for k in ("earningsTimestamp", "earningsTimestampStart", "earningsTimestampEnd"):
+        v = info.get(k)
+        if isinstance(v, (int, float)) and v > 0:
+            try:
+                cands.append(datetime.datetime.fromtimestamp(v, datetime.timezone.utc).date())
+            except Exception:
+                pass
+        elif isinstance(v, str):
+            try:
+                cands.append(datetime.date.fromisoformat(v[:10]))
+            except Exception:
+                pass
+    try:
+        cal = t.calendar
+        ed = cal.get("Earnings Date") if isinstance(cal, dict) else None
+        if ed:
+            for d in (ed if isinstance(ed, (list, tuple)) else [ed]):
+                try:
+                    cands.append(d if isinstance(d, datetime.date) and not isinstance(d, datetime.datetime) else d.date())
+                except Exception:
+                    try:
+                        cands.append(datetime.date.fromisoformat(str(d)[:10]))
+                    except Exception:
+                        pass
+    except Exception:
+        pass
+    future = sorted(d for d in cands if d >= today)
+    return future[0].isoformat() if future else None
+
+
 def fetch_one(it, session):
     t = yf.Ticker(it["yf"], session=session)
     info = t.info or {}
@@ -64,6 +118,12 @@ def fetch_one(it, session):
     rev = _series(inc, ["Total Revenue", "Operating Revenue"])
     fcf = _series(cf, ["Free Cash Flow"])
     shares = _series(bs, ["Ordinary Shares Number", "Share Issued"], scale=1e6)  # en millones
+
+    # Trimestrales (1 llamada extra, semanal): ingresos últimos 8 trimestres -> muestra aceleración.
+    try:
+        rev_q = _series_q(t.quarterly_income_stmt, ["Total Revenue", "Operating Revenue"])
+    except Exception:
+        rev_q = {}
 
     fcf_margin = None
     if rev and info.get("freeCashflow"):
@@ -93,7 +153,22 @@ def fetch_one(it, session):
         "roe": g("returnOnEquity"),
         "rev_growth": g("revenueGrowth"),
         "annual_return": g("52WeekChange"),
+        # A1: campos vivos (todos del mismo info -> costo cero en llamadas)
+        "dividend_yield": g("dividendYield"),
+        "payout": g("payoutRatio"),
+        "beta": g("beta"),
+        "target": g("targetMeanPrice"),
+        "analysts": info.get("numberOfAnalystOpinions"),
+        "reco": info.get("recommendationKey"),
+        "hi52": g("fiftyTwoWeekHigh"),
+        "lo52": g("fiftyTwoWeekLow"),
+        "debt_equity": g("debtToEquity"),
+        "current_ratio": g("currentRatio"),
+        "total_cash": info.get("totalCash"),
+        "total_debt": info.get("totalDebt"),
+        "earnings_ts": _next_earnings(info, t),  # próximo balance (ISO) — el campo más valioso
         "revenue": rev,   # {year: B}
+        "rev_q": rev_q,   # {YYYYQn: B} últimos 8 trimestres
         "fcf": fcf,        # {year: B}
         "shares": shares,  # {year: M}
     }
@@ -130,11 +205,35 @@ def main():
         print(f"[{i+1}/{len(stocks)}] {it['ticker']:8} {tag}")
         time.sleep(random.uniform(0.6, 1.4))
 
+    # A3: medianas por sector (contexto para semáforos "caro/barato vs sector"). Costo cero.
+    # Solo USD (los ARS tienen P/E nominal por inflación -> no comparables).
+    medians = {}
+    by_sector = {}
+    for k, v in data.items():
+        if k.startswith("_") or not isinstance(v, dict):
+            continue
+        if (v.get("currency") or "").upper() == "ARS":
+            continue
+        sec = v.get("sector")
+        if sec:
+            by_sector.setdefault(sec, []).append(v)
+    for sec, rows in by_sector.items():
+        m = {}
+        for field in ("pe", "profit_margin", "roe", "rev_growth", "ev_ebitda"):
+            vals = [r[field] for r in rows if isinstance(r.get(field), (int, float))]
+            if vals:
+                m[field] = round(statistics.median(vals), 4)
+        if m:
+            medians[sec] = m
+    data["_sector_medians"] = medians
+    data["_meta"] = {"generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")}
+
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
     size = os.path.getsize(OUT) / 1024
-    print(f"\nfundamentals-latest.json: {len(data)} tickers, {size:.0f} KB (ok esta corrida: {ok})")
+    n_tickers = sum(1 for k in data if not k.startswith("_"))
+    print(f"\nfundamentals-latest.json: {n_tickers} tickers, {size:.0f} KB (ok esta corrida: {ok})")
     return 0
 
 
