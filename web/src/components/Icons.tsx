@@ -21,6 +21,8 @@ const PATHS: Record<string, React.ReactNode> = {
   sparkles: <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />,
   expand: <><path d="m9 7-5 5 5 5" /><path d="m15 7 5 5-5 5" /></>,
   collapse: <><path d="m20 17-5-5 5-5" /><path d="m4 7 5 5-5 5" /></>,
+  copy: <><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></>,
+  check: <path d="M20 6 9 17l-5-5" />,
 };
 
 export function Icon({ name, size = 16, className, fill = false, sw = 2 }: { name: string; size?: number; className?: string; fill?: boolean; sw?: number }) {

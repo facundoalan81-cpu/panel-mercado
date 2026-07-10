@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { Signal, Fundamental } from "@/lib/types";
-import { CLASS_META, COUNTRY_META, fmtPct, fmtPrice, signalHint } from "@/lib/format";
+import { CLASS_META, COUNTRY_META, fmtPct, fmtPrice, signalHint, copyReading } from "@/lib/format";
 import { ClassBadge, ScorePips, MAsGlyph } from "./bits";
 import { Logo } from "./Logo";
 import { Icon } from "./Icons";
@@ -25,6 +25,10 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 export function DetailContent({ s, f, onClose, onAnalysis, wide, onToggleWide }: { s: Signal; f?: Fundamental | null; onClose: () => void; onAnalysis: (t: string) => void; wide?: boolean; onToggleWide?: () => void }) {
   const o = s.ohlc;
   const up = (s.chg_pct ?? 0) >= 0;
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(copyReading(s)); setCopied(true); setTimeout(() => setCopied(false), 1800); } catch {}
+  };
   const rangePos = o && o.high != null && o.low != null && s.price != null && o.high !== o.low ? ((s.price - o.low) / (o.high - o.low)) * 100 : null;
   const vsOpen = o && o.open != null && s.price != null ? (s.price / o.open - 1) * 100 : null;
   const dist = (ma?: number) => (ma != null && s.price != null ? fmtPct((s.price / ma - 1) * 100) : "—");
@@ -37,6 +41,7 @@ export function DetailContent({ s, f, onClose, onAnalysis, wide, onToggleWide }:
         <ClassBadge s={s} full />
         <span className="text-xs text-zinc-600">1D</span>
         <div className="ml-auto flex items-center gap-1">
+          <button onClick={copy} aria-label="Copiar lectura para el grupo" title="Copiar lectura (formato alerta) para pegar en el grupo" className={`flex cursor-pointer items-center gap-1 rounded-md border px-2 py-1 text-xs transition-colors ${copied ? "border-emerald-500/40 text-emerald-300" : "border-zinc-700 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"}`}><Icon name={copied ? "check" : "copy"} size={13} /> {copied ? "Copiado ✓" : "Copiar lectura"}</button>
           {onToggleWide && <button onClick={onToggleWide} aria-label={wide ? "Achicar panel" : "Ampliar panel"} title={wide ? "Achicar panel" : "Ampliar panel"} className="hidden cursor-pointer rounded-md px-2 py-1 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200 lg:block"><Icon name={wide ? "collapse" : "expand"} size={15} /></button>}
           <button onClick={onClose} aria-label="Cerrar detalle" className="cursor-pointer rounded-md px-2 py-1 text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200"><Icon name="x" size={15} /></button>
         </div>

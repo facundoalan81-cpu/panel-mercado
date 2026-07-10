@@ -77,6 +77,25 @@ export function signalHint(s: Signal): string {
   return "Sin alineación técnica clara";
 }
 
+// Mini-lectura en el FORMATO de la alerta de WhatsApp (para "Copiar lectura").
+// Se arma con datos ya presentes en el payload; la voz es la del screener del grupo.
+export function copyReading(s: Signal): string {
+  const st = s.macd?.state;
+  const macd = st === "alcista" ? "MACD con recorrido al alza" : st === "bajista" ? "MACD en baja" : "MACD plano";
+  const manos = (s.cmf != null && s.cmf > 0) || s.money_flow === "entrada" ? " Manos grandes entrando." : "";
+  let estado: string;
+  if (s.classification === "FUERTE") estado = "sobre las 4 medias";
+  else if (s.classification === "POTENCIAL" && s.missing?.criterio === "above_all_mas" && s.missing?.pct_para_romper != null)
+    estado = `le queda un ${s.missing.pct_para_romper}% para romper la última media y subirse a todas`;
+  else if (s.classification === "POTENCIAL" && s.missing?.criterio === "green_candle")
+    estado = "sobre las 4 medias, falta que la vela cierre verde";
+  else if (s.classification === "POTENCIAL") estado = "casi alineada técnicamente";
+  else if (s.classification === "A_REVISAR") estado = "RSI recalentado, zona de cautela";
+  else estado = "sin alineación técnica clara";
+  const tail = s.rsi != null ? `RSI ${Math.round(s.rsi)} — ${estado}` : estado;
+  return `${flagFor(s)} $${s.ticker} — ${macd}.${manos} ${tail}. — Radar Fer Inversiones`;
+}
+
 // Explicaciones en castellano para tooltips (enseñar al usuario)
 export const HELP: Record<string, string> = {
   precio: "Precio actual y cuánto cambió hoy (verde sube, rojo baja).",
