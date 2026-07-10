@@ -1,7 +1,7 @@
 name: build-signals
 
-# Corre el job de datos (yfinance) y COMMITEA el JSON al repo.
-# Vercel lo lee y redeploya solo. Free: repo público = minutos ilimitados de Actions.
+# Corre el job de datos (yfinance) y PUBLICA el JSON en el repo de DATOS (branch data-signals).
+# Vercel lo revalida por ISR (15 min) SIN redeploy -> los datos nunca tocan main.
 # OJO: los runners de GitHub son IPs de datacenter y Yahoo puede throttlearlas.
 # Mitigaciones ya en el código: curl_cffi + descarga en lote + reintentos + health gate.
 # Si el bloqueo se vuelve crónico: self-hosted runner (la Mac de Facundo) o proxy residencial.
@@ -40,24 +40,21 @@ jobs:
       - name: Calcular señales (diario + intradía + marcos)
         run: python data-pipeline/build_signals.py
 
-      - name: Publicar JSON al repo (lo lee Vercel)
+      - name: Publicar al branch `data-signals` del repo de DATOS (Vercel no lo mira -> sin deploy)
+        env:
+          DATA_DEPLOY_KEY: ${{ secrets.DATA_DEPLOY_KEY }}
         run: |
-          cp data-pipeline/output/signals-latest.json web/public/data/signals-latest.json
+          KEYF="$(mktemp)"; printf '%s\n' "$DATA_DEPLOY_KEY" > "$KEYF"; chmod 600 "$KEYF"
+          export GIT_SSH_COMMAND="ssh -i $KEYF -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null"
+          rm -rf _pub && mkdir -p _pub && cp data-pipeline/output/signals-latest.json _pub/signals-latest.json
+          cd _pub
+          git init -q
           git config user.name "panel-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add web/public/data/signals-latest.json
-          if git diff --cached --quiet; then
-            echo "Sin cambios en las señales."
-          else
-            git commit -m "data: señales $(date -u +%F-%H%M)"
-            # Reintento con rebase: si alguien más pusheó a main mientras corríamos, no fallar.
-            for i in 1 2 3 4 5; do
-              git push && { echo "push ok"; break; }
-              echo "push rechazado (race) -> pull --rebase e intento $i"
-              git pull --rebase --autostash origin main || true
-              sleep 3
-            done
-          fi
+          git checkout -q -b data-signals
+          git add signals-latest.json
+          git commit -q -m "signals $(date -u +%F-%H%M)"
+          git push -q -f "git@github.com:facundoalan81-cpu/panel-mercado-data.git" data-signals
 
       - name: Guardar JSON como artifact (debug)
         if: always()
