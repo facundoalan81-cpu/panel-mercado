@@ -119,11 +119,29 @@ def fetch_one(it, session):
     fcf = _series(cf, ["Free Cash Flow"])
     shares = _series(bs, ["Ordinary Shares Number", "Share Issued"], scale=1e6)  # en millones
 
-    # Trimestrales (1 llamada extra, semanal): ingresos últimos 8 trimestres -> muestra aceleración.
+    # Trimestrales (1 llamada extra, semanal): ingresos + EPS últimos 8 trimestres.
     try:
-        rev_q = _series_q(t.quarterly_income_stmt, ["Total Revenue", "Operating Revenue"])
+        qinc = t.quarterly_income_stmt
     except Exception:
-        rev_q = {}
+        qinc = None
+    rev_q = _series_q(qinc, ["Total Revenue", "Operating Revenue"])
+    eps_q = _series_q(qinc, ["Diluted EPS", "Basic EPS"], scale=1)  # por acción, sin escalar
+
+    # Ganancia neta anual (misma tabla inc ya pedida)
+    net_income = _series(inc, ["Net Income", "Net Income Common Stockholders"])
+
+    # Historial de dividendos (1 llamada extra): total pagado por acción por año, últimos 6.
+    div_hist = {}
+    try:
+        divs = t.dividends
+        if divs is not None and len(divs):
+            by_year = {}
+            for ts, v in divs.items():
+                by_year[int(ts.year)] = by_year.get(int(ts.year), 0.0) + float(v)
+            for y in sorted(by_year)[-6:]:
+                div_hist[y] = round(by_year[y], 4)
+    except Exception:
+        pass
 
     fcf_margin = None
     if rev and info.get("freeCashflow"):
@@ -169,6 +187,9 @@ def fetch_one(it, session):
         "earnings_ts": _next_earnings(info, t),  # próximo balance (ISO) — el campo más valioso
         "revenue": rev,   # {year: B}
         "rev_q": rev_q,   # {YYYYQn: B} últimos 8 trimestres
+        "eps_q": eps_q,    # {YYYYQn: $/acción} últimos 8 trimestres
+        "net_income": net_income,  # {year: B} ganancia neta
+        "div_hist": div_hist,      # {year: $/acción pagado} últimos 6 años
         "fcf": fcf,        # {year: B}
         "shares": shares,  # {year: M}
     }
