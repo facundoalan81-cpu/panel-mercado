@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { track } from "@vercel/analytics";
 import type { Signal, Fng } from "@/lib/types";
 import { SECTOR_ORDER, fmtPct, fmtPrice } from "@/lib/format";
 import { Tip } from "./Tooltip";
@@ -146,7 +147,7 @@ function MoverRow({ s, onSelect }: { s: Signal; onSelect: (s: Signal) => void })
   );
 }
 
-export function MarketPanel({ items, fng, onSelect }: { items: Signal[]; fng?: Fng; onSelect?: (s: Signal) => void }) {
+export function MarketPanel({ items, fng, onSelect, balances }: { items: Signal[]; fng?: Fng; onSelect?: (s: Signal) => void; balances?: { ticker: string; name: string; date: string; days: number }[] }) {
   const { sectors, subiendo, bajando } = useMemo(() => {
     const scored = items.filter((s) => s.status === "ok" && s.bias).map((s) => ({ s, v: s.bias!.score }));
     const bySec: Record<string, { sum: number; n: number }> = {};
@@ -163,6 +164,23 @@ export function MarketPanel({ items, fng, onSelect }: { items: Signal[]; fng?: F
   return (
     <div className="space-y-5">
       {fng?.history?.length ? <FearGreed fng={fng} /> : null}
+
+      {onSelect && balances && balances.length > 0 && (
+        <section>
+          <h3 className="mb-2 text-[11px] font-medium uppercase tracking-wider text-zinc-500">📅 Balances de la semana</h3>
+          <div className="space-y-0.5">
+            {balances.map((b) => {
+              const s = items.find((x) => x.ticker === b.ticker);
+              return (
+                <button key={b.ticker} onClick={() => { if (s) { track("balance_badge_click", { ticker: b.ticker }); onSelect(s); } }} disabled={!s} className="flex w-full items-center justify-between gap-2 rounded-md px-1.5 py-1.5 text-left transition-colors hover:bg-zinc-800/40 disabled:cursor-default disabled:opacity-40">
+                  <span className="flex min-w-0 items-baseline gap-1.5"><span className="text-sm font-medium text-zinc-200">{b.ticker}</span><span className="truncate text-[11px] text-zinc-600">{b.name}</span></span>
+                  <span className="shrink-0 text-[11px] text-zinc-400">{b.date}{b.days <= 1 ? " · ¡ya!" : ` · en ${b.days}d`}</span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {onSelect && (subiendo.length > 0 || bajando.length > 0) && (
         <section>

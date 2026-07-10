@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import { track } from "@vercel/analytics";
 import { useUser } from "@clerk/nextjs";
 import type { Signal, SignalsPayload, Fundamentals } from "@/lib/types";
-import { CLASS_META, COUNTRY_META, SECTOR_ORDER, HELP, fmtPrice, fmtPct } from "@/lib/format";
+import { CLASS_META, COUNTRY_META, SECTOR_ORDER, HELP, fmtPrice, fmtPct, earningsInfo } from "@/lib/format";
 import { BiasBadge, ScorePips, RsiCell, MacdPill, MAsGlyph, VolFlowCell, Flag, EmaPair, SuperTrendCell, WaveTrendCell, BbpCell, VolCell, AvwapCell, RsiHistCell } from "./bits";
 import { Icon } from "./Icons";
 import { Tip } from "./Tooltip";
@@ -99,6 +100,7 @@ export default function Dashboard({ data }: { data: SignalsPayload }) {
     return () => { alive = false; };
   }, []);
   const [analysis, setAnalysis] = useState<string | null>(null);
+  const openAnalysis = (t: string) => { track("analysis_open", { ticker: t }); setAnalysis(t); };
   const [tab, setTab] = useState("todos");
   const [countries, setCountries] = useState<Set<string>>(new Set());
   const [sectors, setSectors] = useState<Set<string>>(new Set());
@@ -289,6 +291,17 @@ export default function Dashboard({ data }: { data: SignalsPayload }) {
 
   const toggleSort = (key: string) => setSort((p) => (p?.key === key ? (p.dir === "desc" ? { key, dir: "asc" } : null) : { key, dir: "desc" }));
 
+  // "Balances de la semana": papeles que presentan en ≤7 días (earnings_ts de fundamentales).
+  const balances = useMemo(() => {
+    const out: { ticker: string; name: string; date: string; days: number }[] = [];
+    for (const s of data.items) {
+      const e = earningsInfo(funds[s.ticker]?.earnings_ts);
+      if (e?.soon) out.push({ ticker: s.ticker, name: s.name, date: e.date, days: e.days });
+    }
+    return out.sort((a, b) => a.days - b.days);
+  }, [data.items, funds]);
+  const balanceMap = useMemo(() => new Map(balances.map((b) => [b.ticker, b])), [balances]);
+
   // "Mis papeles hoy": resumen de los favoritos con datos ya en el payload.
   const favSummary = useMemo(() => {
     if (!favs.size) return null;
@@ -457,7 +470,7 @@ export default function Dashboard({ data }: { data: SignalsPayload }) {
               ) : "Sin resultados con estos filtros."}
             </div>
           ) : view === "simple" ? (
-            <SimpleTable groups={groups} favs={favs} onToggleFav={toggle} onSelect={setSelected} />
+            <SimpleTable groups={groups} favs={favs} onToggleFav={toggle} onSelect={setSelected} earnings={balanceMap} />
           ) : (
             <div className="overflow-x-auto rounded-lg border border-zinc-800">
               <table className="w-full min-w-[1560px] text-sm">
@@ -500,6 +513,7 @@ export default function Dashboard({ data }: { data: SignalsPayload }) {
                               <div className="leading-tight">
                                 <div className="flex items-center gap-1.5 font-medium">
                                   <Flag s={s} size={14} />{s.ticker}
+                                  {balanceMap.has(s.ticker) && <span title={`Presenta balance el ${balanceMap.get(s.ticker)!.date}`} className="text-[10px]">📅</span>}
                                   {s.defensive && <span className="text-zinc-500" title="Defensiva"><Icon name="shield" size={11} /></span>}
                                 </div>
                                 <div className="hidden max-w-[150px] truncate text-[11px] text-zinc-600 md:block">{s.name}</div>
@@ -551,17 +565,17 @@ export default function Dashboard({ data }: { data: SignalsPayload }) {
         <aside className={`hidden shrink-0 transition-[width] duration-200 lg:block ${detailWide ? "w-[620px]" : "w-[360px]"}`}>
           <div className="sticky top-[60px] max-h-[calc(100vh-72px)] overflow-hidden rounded-xl border border-zinc-800">
             {selected ? (
-              <div className="h-[calc(100vh-72px)]"><DetailContent s={selected} f={funds[selected.ticker] ?? null} resumen={resumenEs[selected.ticker]} onClose={() => setSelected(null)} onAnalysis={(t) => { setSelected(null); setAnalysis(t); }} wide={detailWide} onToggleWide={() => setDetailWide((v) => !v)} /></div>
+              <div className="h-[calc(100vh-72px)]"><DetailContent s={selected} f={funds[selected.ticker] ?? null} resumen={resumenEs[selected.ticker]} onClose={() => setSelected(null)} onAnalysis={(t) => { setSelected(null); openAnalysis(t); }} wide={detailWide} onToggleWide={() => setDetailWide((v) => !v)} /></div>
             ) : (
-              <div className="max-h-[calc(100vh-72px)] overflow-y-auto p-3"><MarketPanel items={filtered} fng={data.fng} onSelect={setSelected} /></div>
+              <div className="max-h-[calc(100vh-72px)] overflow-y-auto p-3"><MarketPanel items={filtered} fng={data.fng} onSelect={setSelected} balances={balances.slice(0, 5)} /></div>
             )}
           </div>
         </aside>
       </div>
 
-      <DetailDrawer s={selected} f={selected ? funds[selected.ticker] ?? null : null} resumen={selected ? resumenEs[selected.ticker] : undefined} onClose={() => setSelected(null)} onAnalysis={(t) => { setSelected(null); setAnalysis(t); }} />
+      <DetailDrawer s={selected} f={selected ? funds[selected.ticker] ?? null : null} resumen={selected ? resumenEs[selected.ticker] : undefined} onClose={() => setSelected(null)} onAnalysis={(t) => { setSelected(null); openAnalysis(t); }} />
       {analysis && byTicker.get(analysis) && (
-        <AnalysisMode s={byTicker.get(analysis)!} f={funds[analysis] ?? null} resumen={resumenEs[analysis]} all={viewItems} funds={funds} onSelect={(t) => setAnalysis(t)} onClose={() => setAnalysis(null)} />
+        <AnalysisMode s={byTicker.get(analysis)!} f={funds[analysis] ?? null} resumen={resumenEs[analysis]} all={viewItems} funds={funds} onSelect={(t) => openAnalysis(t)} onClose={() => setAnalysis(null)} />
       )}
     </div>
   );

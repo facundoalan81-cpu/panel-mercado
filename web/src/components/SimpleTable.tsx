@@ -35,11 +35,13 @@ export function SimpleTable({
   favs,
   onToggleFav,
   onSelect,
+  earnings,
 }: {
   groups: readonly (readonly [string, Signal[]])[];
   favs: Set<string>;
   onToggleFav: (t: string) => void;
   onSelect: (s: Signal) => void;
+  earnings?: Map<string, { date: string; days: number }>;
 }) {
   return (
     <div className="overflow-x-auto rounded-lg border border-zinc-800">
@@ -72,7 +74,7 @@ export function SimpleTable({
                     <div className="flex items-center gap-2.5">
                       <Logo s={s} size={26} />
                       <div className="leading-tight">
-                        <div className="flex items-center gap-1.5 font-medium"><Flag s={s} size={14} />{s.ticker}</div>
+                        <div className="flex items-center gap-1.5 font-medium"><Flag s={s} size={14} />{s.ticker}{earnings?.has(s.ticker) && <span title={`Presenta balance el ${earnings.get(s.ticker)!.date}`} className="text-[10px]">📅</span>}</div>
                         <div className="max-w-[170px] truncate text-xs text-zinc-600">{s.name}</div>
                       </div>
                     </div>

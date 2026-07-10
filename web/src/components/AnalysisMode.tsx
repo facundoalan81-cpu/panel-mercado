@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { Signal, Fundamental, Fundamentals } from "@/lib/types";
-import { fmtPrice, fmtPct, sectorMedians, vsSector, earningsInfo, fmtEsNum } from "@/lib/format";
+import { fmtPrice, fmtPct, sectorMedians, vsSector, earningsInfo, fmtEsNum, ADR_PAIRS } from "@/lib/format";
 import { ClassBadge } from "./bits";
 import { Logo } from "./Logo";
 import { FundChart } from "./FundChart";
@@ -158,7 +158,12 @@ export function AnalysisMode({
             <>
               {f.currency === "ARS" && (
                 <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
-                  ⚠ Balances en pesos nominales (inflación): los ratios de valuación (P/E, ROE, EV/EBITDA) no son comparables y se ocultan. Las series anuales también están distorsionadas — para valuar este papel, usar su ADR en USD si existe.
+                  ⚠ Balances en pesos nominales (inflación): los ratios de valuación (P/E, ROE, EV/EBITDA) no son comparables y se ocultan. Las series anuales también están distorsionadas — para valuar este papel, usar su equivalente en USD si existe.
+                  {ADR_PAIRS[s.ticker] && funds[ADR_PAIRS[s.ticker]] && (
+                    <button onClick={() => onSelect(ADR_PAIRS[s.ticker])} className="mt-1 block cursor-pointer font-medium text-amber-100 underline decoration-amber-400/50 underline-offset-2 hover:text-white">
+                      Ver valuación en USD → ${ADR_PAIRS[s.ticker]}
+                    </button>
+                  )}
                 </div>
               )}
               {/* Fila de contexto: balance, dividendo, beta */}

@@ -125,6 +125,11 @@ export function earningsInfo(iso?: string | null): { date: string; days: number;
   return { date, days, soon: days >= 0 && days <= 7 };
 }
 
+// Pares BCBA (ARS) ↔ ADR/sibling en USD: para papeles ARS con valuación distorsionada por inflación,
+// ofrecer ver la valuación en dólares del hermano cotizante. La mayoría de los locales-con-ADR ya se
+// deduplican (solo se muestra el ADR); acá van los casos donde conviven ambos (ej. Ternium AR vs global).
+export const ADR_PAIRS: Record<string, string> = { TXAR: "TX" };
+
 // Número con formato es-AR (puntos de miles, coma decimal).
 export function fmtEsNum(n: number | null | undefined, dec = 1): string {
   if (n == null) return "—";
