@@ -63,11 +63,11 @@ export function signalHint(s: Signal): string {
   if (s.classification === "FUERTE")
     return s.substate === "rompiendo_ultima_media"
       ? "Recién cruzó las 4 medias, MACD alcista"
-      : "Sobre las 4 medias, MACD alcista, volumen entrando";
+      : "Sobre las 4 medias, MACD alcista, manos grandes entrando";
   if (s.classification === "POTENCIAL") {
     const c = s.missing?.criterio;
-    if (c === "above_all_mas") return `MACD alcista; a ${s.missing?.pct_para_romper ?? ""}% de subirse a la última media`;
-    if (c === "green_candle") return "Sobre las medias y MACD alcista; vela del día aún roja";
+    if (c === "above_all_mas") return "MACD alcista; le falta romper la última media para subirse a todas";
+    if (c === "green_candle") return "Sobre las medias y MACD alcista; falta que la vela cierre verde";
     if (c === "macd_bull") return "Sobre las medias; MACD todavía sin confirmar";
     if (c === "rsi_healthy") return "Alineada, pero RSI algo alto";
     if (c === "money_flow_bull") return "Alineada; sin volumen comprador todavía";

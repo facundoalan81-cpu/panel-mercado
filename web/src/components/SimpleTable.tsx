@@ -90,7 +90,7 @@ export function SimpleTable({
                     <HPill label="Largo" h={s.horizon?.largo} />
                   </td>
                   <td className="px-3 py-2.5 text-center">
-                    <Tip text={s.score == null ? "Sin datos" : `Cumple ${s.score} de 5 criterios técnicos`}><ScorePips score={s.score} /></Tip>
+                    <Tip text={s.score == null ? "Sin datos" : `Cumple ${s.score} de los 5 criterios`}><ScorePips score={s.score} /></Tip>
                   </td>
                   <td className="px-2 py-2.5 text-center">
                     <button onClick={(e) => { e.stopPropagation(); onToggleFav(s.ticker); }} className={`cursor-pointer ${favs.has(s.ticker) ? "text-amber-400" : "text-zinc-700 hover:text-zinc-400"}`} title="Mi lista">

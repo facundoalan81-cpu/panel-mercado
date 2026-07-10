@@ -61,6 +61,11 @@ export function DetailContent({ s, f, onClose, onAnalysis, wide, onToggleWide }:
               </div>
             )}
             <div className="text-xs text-zinc-300">{signalHint(s)}</div>
+            {s.classification === "POTENCIAL" && s.missing?.pct_para_romper != null && (
+              <div className="mt-1.5 rounded-md bg-violet-500/10 px-2 py-1 text-xs font-medium text-violet-200">
+                Le queda un {s.missing.pct_para_romper}% para romper la última media y subirse a todas.
+              </div>
+            )}
           </div>
         )}
 
@@ -74,7 +79,7 @@ export function DetailContent({ s, f, onClose, onAnalysis, wide, onToggleWide }:
               <KV k="RSI(14)" v={s.rsi?.toFixed(1)} />
               <KV k="MACD" v={s.macd?.state} accent={s.macd?.state === "alcista" ? "text-green-400" : s.macd?.state === "bajista" ? "text-red-400" : undefined} />
               <KV k="SuperTrend" v={s.supertrend?.dir === "up" ? "Up" : s.supertrend?.dir === "down" ? "Down" : "—"} accent={s.supertrend?.dir === "up" ? "text-green-400" : "text-red-400"} />
-              <KV k="Volumen (CMF)" v={s.money_flow} accent={s.money_flow === "entrada" ? "text-green-400" : s.money_flow === "salida" ? "text-red-400" : undefined} />
+              <KV k="Manos grandes (CMF)" v={s.money_flow} accent={s.money_flow === "entrada" ? "text-green-400" : s.money_flow === "salida" ? "text-red-400" : undefined} />
               <KV k="BBP" v={s.bbp?.state === "bull" ? "Bull" : s.bbp?.state === "bear" ? "Bear" : "—"} accent={s.bbp?.state === "bull" ? "text-green-400" : "text-red-400"} />
               <KV k="Horizonte corto" v={s.horizon?.corto} accent={s.horizon?.corto === "alcista" ? "text-green-400" : s.horizon?.corto === "bajista" ? "text-red-400" : undefined} />
               <KV k="Horizonte largo" v={s.horizon?.largo} accent={s.horizon?.largo === "alcista" ? "text-green-400" : s.horizon?.largo === "bajista" ? "text-red-400" : undefined} />
