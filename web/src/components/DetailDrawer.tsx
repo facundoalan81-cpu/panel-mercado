@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { track } from "@vercel/analytics";
 import type { Signal, Fundamental } from "@/lib/types";
-import { CLASS_META, COUNTRY_META, fmtPct, fmtPrice, signalHint, copyReading, earningsInfo } from "@/lib/format";
+import { CLASS_META, COUNTRY_META, fmtPct, fmtPrice, signalHint, copyReading, earningsInfo, horizonLabel } from "@/lib/format";
 import { ClassBadge, ScorePips, MAsGlyph } from "./bits";
 import { Logo } from "./Logo";
 import { Icon } from "./Icons";
@@ -12,9 +12,9 @@ import { TradingViewTechnicals } from "./TradingViewTechnicals";
 
 function KV({ k, v, accent }: { k: string; v: React.ReactNode; accent?: string }) {
   return (
-    <div className="flex items-baseline justify-between rounded-md bg-zinc-900/50 px-2.5 py-1.5">
-      <span className="text-[11px] uppercase tracking-wide text-zinc-500">{k}</span>
-      <span className={`nums text-sm ${accent ?? "text-zinc-200"}`}>{v}</span>
+    <div className="flex items-baseline justify-between gap-2 rounded-md bg-zinc-900/50 px-2.5 py-1.5">
+      <span className="min-w-0 truncate text-[11px] uppercase tracking-wide text-zinc-500">{k}</span>
+      <span className={`nums shrink-0 whitespace-nowrap text-right text-sm ${accent ?? "text-zinc-200"}`}>{v}</span>
     </div>
   );
 }
@@ -90,8 +90,8 @@ export function DetailContent({ s, f, resumen, onClose, onAnalysis, wide, onTogg
               <KV k="SuperTrend" v={s.supertrend?.dir === "up" ? "Up" : s.supertrend?.dir === "down" ? "Down" : "—"} accent={s.supertrend?.dir === "up" ? "text-green-400" : "text-red-400"} />
               <KV k="Manos grandes (CMF)" v={s.money_flow} accent={s.money_flow === "entrada" ? "text-green-400" : s.money_flow === "salida" ? "text-red-400" : undefined} />
               <KV k="BBP" v={s.bbp?.state === "bull" ? "Bull" : s.bbp?.state === "bear" ? "Bear" : "—"} accent={s.bbp?.state === "bull" ? "text-green-400" : "text-red-400"} />
-              <KV k="Horizonte corto" v={s.horizon?.corto} accent={s.horizon?.corto === "alcista" ? "text-green-400" : s.horizon?.corto === "bajista" ? "text-red-400" : undefined} />
-              <KV k="Horizonte largo" v={s.horizon?.largo} accent={s.horizon?.largo === "alcista" ? "text-green-400" : s.horizon?.largo === "bajista" ? "text-red-400" : undefined} />
+              <KV k="Corto plazo" v={horizonLabel(s.horizon?.corto).txt} accent={horizonLabel(s.horizon?.corto).col} />
+              <KV k="Largo plazo" v={horizonLabel(s.horizon?.largo).txt} accent={horizonLabel(s.horizon?.largo).col} />
             </div>
             <div className="mt-2 flex items-center justify-between rounded-md bg-zinc-900/50 px-2.5 py-2">
               <span className="text-[11px] uppercase tracking-wide text-zinc-500">vs medias 20/30/150/200</span>

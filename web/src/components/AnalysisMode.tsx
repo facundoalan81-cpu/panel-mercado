@@ -5,6 +5,7 @@ import type { Signal, Fundamental, Fundamentals } from "@/lib/types";
 import { fmtPrice, fmtPct, sectorMedians, vsSector, earningsInfo, fmtEsNum, fundVerdict, ADR_PAIRS } from "@/lib/format";
 import { ClassBadge } from "./bits";
 import { Tip } from "./Tooltip";
+import { Icon } from "./Icons";
 import { Logo } from "./Logo";
 import { FundChart, FundBars } from "./FundChart";
 
@@ -109,6 +110,13 @@ export function AnalysisMode({
 
   return (
     <div className="fixed inset-0 z-[60] overflow-y-auto bg-[#09090b]">
+      {/* Barra fija: botón Volver siempre visible (antes el cierre quedaba escondido en el rail) */}
+      <div className="sticky top-0 z-20 flex items-center gap-3 border-b border-zinc-800 bg-[#09090b]/95 px-4 py-2.5 backdrop-blur">
+        <button onClick={onClose} className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-zinc-700 px-3 py-1.5 text-sm font-medium text-zinc-200 transition-colors hover:border-zinc-500 hover:bg-zinc-800 hover:text-white">
+          <Icon name="back" size={15} /> Volver al panel
+        </button>
+        <span className="truncate text-sm text-zinc-500">{s.ticker} · La empresa a fondo</span>
+      </div>
       <div className="mx-auto flex max-w-[1500px] flex-col gap-5 p-4 lg:flex-row lg:p-6">
         {/* MAIN */}
         <div className="min-w-0 flex-1 space-y-5">
