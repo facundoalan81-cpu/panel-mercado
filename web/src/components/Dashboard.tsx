@@ -115,6 +115,9 @@ export default function Dashboard({ data }: { data: SignalsPayload }) {
   const [showFilters, setShowFilters] = useState(false);
   const [selected, setSelected] = useState<Signal | null>(null);
   const [detailWide, setDetailWide] = useState(false);
+  // Rail derecho con papel abierto: tab Papel/Mercado (el Fear&Greed no se pierde al abrir un papel).
+  const [railTab, setRailTab] = useState<"papel" | "mercado">("papel");
+  useEffect(() => { if (selected) setRailTab("papel"); }, [selected]);
   const [clock, setClock] = useState("");
   type Quotes = { t: string; q: Record<string, { p: number; c: number | null }> };
   const [live, setLive] = useState<Quotes | null>(null);        // carril completo (~5 min, 614 papeles)
@@ -336,7 +339,7 @@ export default function Dashboard({ data }: { data: SignalsPayload }) {
                   <span className={`relative inline-flex h-2 w-2 rounded-full ${arFresh ? "bg-emerald-400" : "bg-zinc-500"}`} />
                 </span>
                 <div className="leading-tight">
-                  <div className="text-[9px] uppercase tracking-wide text-zinc-500">Argentina</div>
+                  <div className="text-[9px] uppercase tracking-wide text-zinc-500">Panel Líder/General</div>
                   <div className={`text-xs font-semibold ${arFresh ? "text-emerald-300" : "text-zinc-300"}`}>{arFresh ? "Al día" : "Últimos precios"}</div>
                 </div>
               </div>
@@ -565,7 +568,18 @@ export default function Dashboard({ data }: { data: SignalsPayload }) {
         <aside className={`hidden shrink-0 transition-[width] duration-200 lg:block ${detailWide ? "w-[620px]" : "w-[360px]"}`}>
           <div className="sticky top-[60px] max-h-[calc(100vh-72px)] overflow-hidden rounded-xl border border-zinc-800">
             {selected ? (
-              <div className="h-[calc(100vh-72px)]"><DetailContent s={selected} f={funds[selected.ticker] ?? null} resumen={resumenEs[selected.ticker]} onClose={() => setSelected(null)} onAnalysis={(t) => { setSelected(null); openAnalysis(t); }} wide={detailWide} onToggleWide={() => setDetailWide((v) => !v)} /></div>
+              <div className="flex h-[calc(100vh-72px)] flex-col">
+                <div className="flex shrink-0 items-center gap-0.5 border-b border-zinc-800 bg-zinc-900/40 p-1">
+                  {([["papel", selected.ticker], ["mercado", "Mercado"]] as const).map(([id, lbl]) => (
+                    <button key={id} onClick={() => setRailTab(id)} className={`flex-1 cursor-pointer rounded-md px-2 py-1 text-xs font-medium transition-colors ${railTab === id ? "bg-zinc-800 text-zinc-100" : "text-zinc-500 hover:text-zinc-300"}`}>{lbl}</button>
+                  ))}
+                </div>
+                {railTab === "papel" ? (
+                  <div className="min-h-0 flex-1"><DetailContent s={selected} f={funds[selected.ticker] ?? null} resumen={resumenEs[selected.ticker]} onClose={() => setSelected(null)} onAnalysis={(t) => { setSelected(null); openAnalysis(t); }} wide={detailWide} onToggleWide={() => setDetailWide((v) => !v)} /></div>
+                ) : (
+                  <div className="min-h-0 flex-1 overflow-y-auto p-3"><MarketPanel items={filtered} fng={data.fng} onSelect={setSelected} balances={balances.slice(0, 5)} /></div>
+                )}
+              </div>
             ) : (
               <div className="max-h-[calc(100vh-72px)] overflow-y-auto p-3"><MarketPanel items={filtered} fng={data.fng} onSelect={setSelected} balances={balances.slice(0, 5)} /></div>
             )}
