@@ -1,4 +1,5 @@
 import { ClerkProvider } from "@clerk/nextjs";
+import { Analytics } from "@vercel/analytics/next";
 import { dark } from "@clerk/themes";
 import { esES } from "@clerk/localizations";
 import { cookies } from "next/headers";
@@ -24,6 +25,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <ClerkProvider appearance={{ baseTheme: dark, variables: { colorPrimary: "#7c3aed" } }} localization={esES}>
           {gated ? children : <PasswordGate />}
         </ClerkProvider>
+        <Analytics />
       </body>
     </html>
   );

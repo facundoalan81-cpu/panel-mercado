@@ -1,6 +1,6 @@
 """
 Orquesta: fetch OHLCV -> calcula indicadores/score/clasificación -> escribe signals-latest.json
-Salida: data-pipeline/output/signals-latest.json (en prod se sube a Cloudflare R2).
+Salida: data-pipeline/output/signals-latest.json (en prod se publica al branch data-signals del repo de datos).
 """
 from __future__ import annotations
 import json
